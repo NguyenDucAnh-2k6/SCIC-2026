@@ -1,0 +1,9 @@
+{
+  "total_records": 9351,
+  "shard_counts": {
+    "train": 1,
+    "val": 1,
+    "test": 1
+  },
+  "output_dir": "data\\shards"
+}

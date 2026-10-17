@@ -1,0 +1,44 @@
+data:
+  raw_zip_path: "/kaggle/input/ednet-kt1/EdNet-KT1.zip"
+  canonical_dir: "/kaggle/working/data/canonical"
+  shards_dir: "/kaggle/working/data/shards"
+  max_history_len: 200
+  chunk_size_rows: 100000
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  seed: 42
+
+estimator:
+  model_type: "gru_dkt"
+  d_model: 64
+  d_hidden: 128
+  num_layers: 1
+  dropout: 0.1
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  batch_size: 128
+  max_epochs: 20
+  early_stopping_patience: 5
+
+policy:
+  policy_type: "cql"
+  d_state: 12
+  d_hidden: 128
+  learning_rate: 0.0003
+  batch_size: 128
+  gamma_base: 0.99
+  tau_seconds: 60.0
+  cql_alpha: 1.0
+  workload_budget: 15.0
+  harm_epsilon: 0.05
+  polyak_tau: 0.005
+
+twin:
+  default_cohort_size: 60
+  episode_duration_minutes: 60
+  mc_rollout_samples: 20
+  scenarios:
+    - "neutral"
+    - "high_engagement"
+    - "fatigue_prone"

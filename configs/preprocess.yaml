@@ -1,0 +1,10 @@
+data:
+  raw_zip_path: "data/EdNet-KT1.zip"
+  canonical_dir: "data/canonical"
+  shards_dir: "data/shards"
+  max_history_len: 200
+  chunk_size_rows: 50000
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  seed: 42

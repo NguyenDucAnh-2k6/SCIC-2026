@@ -1,0 +1,37 @@
+{
+  "release_id": "classtwin_release_1792232223",
+  "project": "ClassTwin - SCIC 2026",
+  "timestamp": "2026-10-17T10:17:03Z",
+  "modules": {
+    "state_estimator": {
+      "model_type": "GRU-DKT",
+      "d_model": 64,
+      "d_hidden": 128,
+      "num_questions": 30,
+      "ece": 0.24799057532579472,
+      "brier_score": 0.18737713030203815,
+      "checkpoint_sha256": "63be630c4b8b86b414510e97729a80aa54d7763bc8da988f84150b8e43fe1fba"
+    },
+    "policy": {
+      "policy_type": "Discrete-CQL",
+      "d_state": 12,
+      "actions": [
+        "lecture",
+        "quiz",
+        "groupwork",
+        "discussion",
+        "break"
+      ],
+      "cql_alpha": 1.0,
+      "gamma_base": 0.99,
+      "workload_budget": 10.0,
+      "final_loss": 1.489748239517212,
+      "checkpoint_sha256": "d8979046af03ad4ddd8090485488212d938a61f9e89f1054915a787db329b912"
+    }
+  },
+  "operational_thresholds": {
+    "min_coverage_threshold": 0.6,
+    "max_uncertainty_threshold": 0.45,
+    "safe_fallback_enabled": true
+  }
+}

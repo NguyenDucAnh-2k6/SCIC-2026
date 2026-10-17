@@ -1,0 +1,16 @@
+{
+  "policy_type": "Discrete-CQL",
+  "d_state": 12,
+  "actions": [
+    "lecture",
+    "quiz",
+    "groupwork",
+    "discussion",
+    "break"
+  ],
+  "cql_alpha": 1.0,
+  "gamma_base": 0.99,
+  "workload_budget": 10.0,
+  "final_loss": 1.489748239517212,
+  "checkpoint_sha256": "d8979046af03ad4ddd8090485488212d938a61f9e89f1054915a787db329b912"
+}

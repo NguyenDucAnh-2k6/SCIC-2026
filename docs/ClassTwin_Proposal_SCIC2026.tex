@@ -1,0 +1,765 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- CẤU HÌNH GÓI VÀ FONT ---
+\usepackage{fontspec}
+\setmainfont{Arial}[
+  BoldFont = {arialbd.ttf},
+  ItalicFont = {ariali.ttf},
+  BoldItalicFont = {arialbi.ttf}
+]
+\setmonofont{Consolas}[Scale=0.92]
+
+\usepackage[top=22mm, bottom=22mm, left=20mm, right=20mm, headheight=14pt]{geometry}
+\usepackage{amsmath, amssymb, amsfonts, bm, mathtools}
+\usepackage{booktabs, tabularx, multirow, array}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{caption}
+
+% --- MÀU SẮC CHUẨN THIẾT KẾ ---
+\definecolor{NavyDark}{HTML}{0D233A}
+\definecolor{NavyBlue}{HTML}{1A365D}
+\definecolor{TealPrimary}{HTML}{007A87}
+\definecolor{TealLight}{HTML}{E6F4F6}
+\definecolor{TealBorder}{HTML}{99D5DC}
+\definecolor{SlateGray}{HTML}{4A5568}
+\definecolor{MutedGray}{HTML}{718096}
+\definecolor{LightBg}{HTML}{F8FAFC}
+\definecolor{AccentAmber}{HTML}{D97706}
+\definecolor{BorderGray}{HTML}{E2E8F0}
+\definecolor{SuccessGreen}{HTML}{0D9488}
+\definecolor{DarkRed}{HTML}{B91C1C}
+
+% --- CẤU HÌNH HYPERREF VÀ MỤC LỤC ---
+\usepackage[
+  colorlinks=true,
+  linkcolor=NavyBlue,
+  citecolor=TealPrimary,
+  urlcolor=TealPrimary,
+  bookmarks=true,
+  bookmarksnumbered=true,
+  pdfpagemode=UseOutlines,
+  pdfstartview=FitH,
+  pdftitle={ClassTwin - Đề án Bản sao số Lớp học & Tối ưu hóa Chính sách Giảng dạy bằng Offline RL},
+  pdfauthor={SCIC 2026 Team},
+  pdfsubject={SCIC 2026 Proposal: Classroom Digital Twin, Deep RL, Pedagogical Decision Support, EdTech Business Strategy}
+]{hyperref}
+
+% --- ĐỊNH DẠNG HEADER / FOOTER ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{MutedGray}{\footnotesize \textbf{SCIC 2026} • Đề án Nghiên cứu \& Thương mại hóa ClassTwin}}
+\fancyhead[R]{\textcolor{MutedGray}{\footnotesize \hyperlink{toc}{Về Mục lục $\uparrow$}}}
+\fancyfoot[L]{\textcolor{MutedGray}{\footnotesize \textbf{Bản quyền đề án} © 2026 ClassTwin Team. Giữ toàn quyền.}}
+\fancyfoot[R]{\textcolor{NavyDark}{\footnotesize \textbf{Trang \thepage}}}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{TealBorder}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{BorderGray}\leaders\hrule height \footrulewidth\hfill}}
+
+% --- ĐỊNH DẠNG TIÊU ĐỀ ---
+\titleformat{\section}
+  {\color{NavyDark}\Large\bfseries}
+  {\thesection.}{0.8em}{}
+  [\color{TealPrimary}\titlerule]
+
+\titleformat{\subsection}
+  {\color{TealPrimary}\large\bfseries}
+  {\thesubsection}{0.6em}{}
+
+\titleformat{\subsubsection}
+  {\color{NavyBlue}\normalsize\bfseries}
+  {\thesubsubsection}{0.5em}{}
+
+% --- HỘP THÔNG TIN TCOLORBOX ---
+\newtcolorbox{highlightbox}[1][]{
+  colback=TealLight,
+  colframe=TealPrimary,
+  fonttitle=\bfseries\color{white},
+  coltitle=white,
+  boxrule=0.8pt,
+  arc=3pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  title=#1,
+  breakable
+}
+
+\newtcolorbox{businessbox}[1][]{
+  colback=LightBg,
+  colframe=NavyBlue,
+  fonttitle=\bfseries\color{white},
+  coltitle=white,
+  boxrule=0.8pt,
+  arc=3pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  title=#1,
+  breakable
+}
+
+\newtcolorbox{alertbox}[1][]{
+  colback=LightBg,
+  colframe=AccentAmber,
+  fonttitle=\bfseries\color{white},
+  coltitle=white,
+  boxrule=0.8pt,
+  arc=3pt,
+  left=10pt, right=10pt, top=8pt, bottom=8pt,
+  title=#1,
+  breakable
+}
+
+% --- CẤU HÌNH BẢNG BIỂU VÀ DANH SÁCH ---
+\setlist[itemize]{leftmargin=1.4em, itemsep=2pt, topsep=3pt}
+\setlist[enumerate]{leftmargin=1.4em, itemsep=2pt, topsep=3pt}
+\renewcommand{\arraystretch}{1.2}
+
+% --- CẤU HÌNH ALGORITHM ---
+\renewcommand{\algorithmicrequire}{\textbf{Đầu vào:}}
+\renewcommand{\algorithmicensure}{\textbf{Đầu ra:}}
+\floatname{algorithm}{Thuật toán}
+
+\begin{document}
+
+% =========================================================================
+% TRANG BÌA (COVER PAGE)
+% =========================================================================
+\begin{titlepage}
+  \centering
+  \vspace*{8mm}
+  {\scshape\Large CUỘC THI SINH VIÊN NGHIÊN CỨU KHOA HỌC -- SCIC 2026\par}
+  \vspace{3mm}
+  {\color{TealPrimary}\rule{\textwidth}{1.5pt}\par}
+  \vspace{15mm}
+
+  {\Huge\bfseries\color{NavyDark} CLASSROOM DIGITAL TWIN\par}
+  \vspace{3mm}
+  {\LARGE\bfseries\color{TealPrimary} (ClassTwin)\par}
+  \vspace{8mm}
+  
+  {\Large\itshape Hệ thống Bản sao số Lớp học Tối ưu hóa Chiến sách Giảng dạy\\bằng Offline Reinforcement Learning và Hỗ trợ Ra Quyết định Sư phạm\par}
+  \vspace{10mm}
+
+  \begin{tcolorbox}[colback=LightBg, colframe=NavyBlue, boxrule=1pt, arc=4pt, width=0.92\textwidth]
+    \centering\small
+    \textbf{ĐẶC TẢ ĐỀ ÁN NGHIÊN CỨU \& KẾ HOẠCH THƯƠNG MẠI HÓA TOÀN DIỆN}\\
+    \vspace{2mm}
+    \textit{Tích hợp: Mô hình hóa Toán học • Deep Knowledge Tracing • POMDP Bán Markov •\\
+    Offline Constrained RL (CQL) • Kiến trúc Edge-to-Cloud Privacy-First •\\
+    Chiến lược Kinh doanh B2B SaaS • Phân khúc Khách hàng • Mô hình Định giá \& Dự phóng Tài chính}
+  \end{tcolorbox}
+
+  \vfill
+
+  \begin{minipage}{0.48\textwidth}
+    \textbf{Nhóm Tác giả / Đơn vị thực hiện:}\\
+    Nhóm Nghiên cứu ClassTwin\\
+    SCIC 2026 -- Lĩnh vực Trí tuệ Nhân tạo trong Giáo dục (AIED)
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.45\textwidth}
+    \raggedleft
+    \textbf{Phiên bản tài liệu:} v2.0 (Toán học, Mã giả \& Kinh doanh)\\
+    \textbf{Ngày hoàn thiện:} 17 Tháng 10, 2026\\
+    \textbf{Mã lưu trữ:} \texttt{SCIC2026-CLASSTWIN-DOCS}
+  \end{minipage}
+
+  \vspace{8mm}
+  {\color{TealPrimary}\rule{\textwidth}{1pt}\par}
+\end{titlepage}
+
+% =========================================================================
+% MỤC LỤC TƯƠNG TÁC (HYPERREF TABLE OF CONTENTS)
+% =========================================================================
+\newpage
+\phantomsection
+\hypertarget{toc}{}
+\tableofcontents
+\vspace{8mm}
+\noindent\textcolor{TealPrimary}{\rule{\textwidth}{0.8pt}}
+\vspace{4mm}
+
+\noindent\textbf{Hướng dẫn tra cứu nhanh:} Toàn bộ các tiêu đề, công thức, thuật toán và bảng biểu trong tài liệu đều được gắn liên kết định danh. Quý độc giả và thành viên hội đồng có thể bấm trực tiếp vào các mục lục trên hoặc các thẻ tham chiếu \texttt{\textbackslash ref\{\}} trong văn bản để chuyển nhanh đến nội dung tương ứng.
+
+\newpage
+
+% =========================================================================
+% PHẦN I: TỔNG QUAN ĐỀ ÁN VÀ TÍNH CẤP THIẾT
+% =========================================================================
+\section{Tổng quan Đề án và Tính cấp thiết}\label{sec:tong-quan}
+
+\subsection{Bối cảnh và 3 Điểm nghẽn Cốt lõi (Pain Points)}\label{subsec:pain-points}
+Trong kỷ nguyên chuyển đổi số giáo dục đại học và sau phổ thông, đặc biệt tại các lớp học có quy mô đông (từ 50 đến hơn 150 sinh viên), giảng viên phải liên tục đưa ra hàng loạt quyết định điều phối sư phạm theo thời gian thực: \textit{Nên tiếp tục giảng lý thuyết? Hay chuyển sang cho làm quiz ngắn? Đã đến lúc chia nhóm thảo luận hay cần cho cả lớp giải lao 3 phút?}
+
+Tuy nhiên, thực tế giảng dạy hiện nay đang vấp phải ba điểm nghẽn nghiêm trọng (Hình~\ref{fig:pain-points-summary}):
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{Sự phân hóa sâu sắc của người học (Learner Divergence):} Trong cùng một tiết học, luôn tồn tại hiện tượng ``lệch pha'' năng lực: một nhóm sinh viên tiếp thu nhanh đã đạt mức nắm vững kiến thức cao ($\text{Mastery}$ cao) nhưng bắt đầu cảm thấy nhàm chán ($\text{Attention}$ suy giảm); ngược lại, nhóm sinh viên tiếp thu chậm hơn thì bị quá tải, hổng kiến thức tiên quyết và mất phương hướng. Chiến lược giảng dạy cào bằng kiểu ``một kích cỡ cho tất cả'' (\textit{One-size-fits-all}) tất yếu dẫn đến việc nhóm yếu bị bỏ lại phía sau, còn nhóm khá giỏi không được phát huy tối đa tiềm năng.
+  
+  \item \textbf{Điểm mù trong đánh giá trạng thái người học (Latent State Blindness):} Mức độ hiểu sâu bản chất, năng lượng nhận thức, sự mệt mỏi nhận thức (\textit{cognitive fatigue}) và mức độ gắn kết học tập (\textit{engagement}) của sinh viên đều là các \textbf{biến số trạng thái ẩn (latent states)}. Giảng viên đứng trên bục giảng hoàn toàn không thể quan sát chính xác bằng mắt thường đối với toàn bộ giảng đường rộng lớn.
+  
+  \item \textbf{Rủi ro khôn lường của phương pháp ``Thử và Sai'' (The Peril of Trial-and-Error):} Không một cơ sở giáo dục nào được phép biến sinh viên thật thành ``chuột bạch'' để thử nghiệm trực tiếp các thuật toán Trí tuệ Nhân tạo Tăng cường (Reinforcement Learning - RL) theo thời gian thực. Một chính sách sư phạm sai lầm từ AI khi thử nghiệm trực tiếp trên lớp học sẽ gây gián đoạn tiếp thu kiến thức, làm tổn hại tâm lý và ảnh hưởng tiêu cực đến kết quả học tập của người học.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tcolorbox}[colback=white, colframe=NavyBlue, boxrule=0.8pt, arc=3pt, width=0.98\textwidth]
+    \small
+    \begin{tabularx}{\textwidth}{p{3.5cm} X p{4cm}}
+      \toprule
+      \textbf{Điểm nghẽn (Pain Point)} & \textbf{Biểu hiện Thực tế tại Giảng đường} & \textbf{Hậu quả Sư phạm} \\
+      \midrule
+      \textbf{1. Phân hóa Người học} & 20\% hiểu sâu chán nản; 30\% hổng kiến thức mất phương hướng. & Áp dụng ``one-size-fits-all'' làm tăng tỷ lệ rớt môn. \\
+      \addlinespace
+      \textbf{2. Điểm mù Trạng thái ẩn} & Mệt mỏi nhận thức, mức gắn kết và độ hiểu bản chất không thể đo bằng mắt thường. & Giảng viên can thiệp cảm tính, thiếu căn cứ định lượng. \\
+      \addlinespace
+      \textbf{3. Rủi ro Thử - và - Sai} & Thử nghiệm AI trực tiếp trên sinh viên gây gián đoạn và tổn hại kết quả học tập. & Rào cản đạo đức và pháp lý ngăn cản áp dụng RL thực tế. \\
+      \bottomrule
+    \end{tabularx}
+  \end{tcolorbox}
+  \caption{Tổng hợp 3 điểm nghẽn sư phạm cốt lõi trong giảng đường truyền thống}\label{fig:pain-points-summary}
+\end{figure}
+
+\begin{highlightbox}[Giải pháp Đề xuất: Hệ thống Bản sao số Lớp học (ClassTwin)]
+Để giải quyết triệt để 3 điểm nghẽn trên, đề án \textbf{ClassTwin} đề xuất một hệ thống kép đột phá:
+\begin{itemize}
+  \item \textbf{Classroom Digital Twin (Bản sao số Lớp học):} Mô hình hóa trạng thái ẩn của từng sinh viên và toàn bộ tập thể lớp, đồng thời đóng vai trò một môi trường giả lập (\textit{simulator}) cho phép chạy thử nghiệm hàng nghìn kịch bản phản thực (\textit{counterfactual rollout}) mà không gây bất kỳ rủi ro nào lên sinh viên thật.
+  \item \textbf{Học Tăng cường Ngoại tuyến có Ràng buộc (Constrained Offline RL):} Tự động tối ưu hóa chính sách can thiệp sư phạm tối ưu từ dữ liệu lịch sử giáo dục quy mô lớn (EdNet) kết hợp ràng buộc nghiêm ngặt về giới hạn khối lượng công việc của giảng viên (\textit{workload}) và bảo đảm không làm suy giảm quyền lợi của nhóm sinh viên yếu (\textit{fairness constraint}).
+  \item \textbf{Hỗ trợ Quyết định Đặt Con người ở Trung tâm (Human-in-the-Loop Decision Support):} AI đóng vai trò người đồng hành tham mưu giải thích được (\textit{explainable co-pilot}); quyền phê duyệt, tinh chỉnh hoặc từ chối quyết định can thiệp 100\% thuộc về giảng viên.
+\end{itemize}
+\end{highlightbox}
+
+\subsection{Nguyên tắc Bằng chứng và Cam kết Đạo đức (Privacy-First)}\label{subsec:privacy-first}
+\begin{alertbox}[Cam kết Đạo đức Dữ liệu Tuyệt đối: KHÔNG Camera Thô -- KHÔNG Ghi âm Nhận dạng]
+Đề án ClassTwin kiên quyết loại bỏ hoàn toàn các phương án sử dụng camera quang học quay quét khuôn mặt (Facial Recognition/Emotion Detection) hoặc microphone thu âm định danh sinh viên. Việc phân tích cảm xúc qua camera không chỉ vi phạm nghiêm trọng quyền riêng tư học đường theo chuẩn GDPR và Luật Bảo vệ Dữ liệu Cá nhân, mà còn mang lại độ nhiễu cực lớn do hành vi đối phó của sinh viên.
+Thay vào đó, ClassTwin sử dụng:
+\begin{itemize}
+  \item Dữ liệu hành vi học tập khách quan từ hệ thống LMS/Quiz (chuỗi đáp án, thời gian làm bài, chuỗi thao tác).
+  \item Dữ liệu bối cảnh môi trường vi khí hậu vô danh tính thông qua các cảm biến IoT ($\text{CO}_2$, nhiệt độ, độ ồn decibel tổng hợp).
+  \item Toàn bộ định danh sinh viên được mã hóa một chiều (\textit{salted pseudonyms}) tại Gateway lớp học trước khi truyền tải.
+\end{itemize}
+\end{alertbox}
+
+\subsection{Lộ trình Triển khai 3 Cấp độ (M1 - M2 - M3)}\label{subsec:ba-cap-do}
+Dự án được phân rã thành ba giai đoạn tiến hóa kỹ thuật bài bản (bảng~\ref{tab:levels-m1-m3}):
+\begin{table}[htbp]
+  \centering\small
+  \caption{Ba cấp độ hiện thực hóa hệ thống ClassTwin}\label{tab:levels-m1-m3}
+  \begin{tabularx}{\textwidth}{l p{3.2cm} X p{3.5cm}}
+    \toprule
+    \textbf{Cấp độ} & \textbf{Tên gọi} & \textbf{Trọng tâm Kỹ thuật} & \textbf{Tiêu chí Nghiệm thu} \\
+    \midrule
+    \textbf{M1} & \textbf{EdNet Baseline} & Ước lượng năng lực người học trên tập dữ liệu lịch sử chuẩn hóa EdNet (hơn 130 triệu tương tác). Dựng mô hình BKT và GRU-DKT. & Log Loss tối thiểu, ROC-AUC $\ge 0.76$, ECE $\le 0.05$ sau calibration. \\
+    \addlinespace
+    \textbf{M2} & \textbf{Class Simulator} & Ghép sinh viên thành lớp học ảo (40--100 người). Giả lập phản ứng phản thực đối với 5 hành động sư phạm cơ bản bằng mô hình kịch bản $\phi$. & Huấn luyện Constrained Offline RL (CQL); phân tích độ nhạy $\phi$. \\
+    \addlinespace
+    \textbf{M3} & \textbf{Real Pilot} & Tích hợp LMS thực tế, ứng dụng Teacher App và Gateway cảm biến IoT môi trường vào 1--3 lớp học đại học đối tác. & Độ trễ suy luận $\le 3\text{s}$, tỷ lệ giảng viên chấp thuận $\ge 65\%$. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\newpage
+
+% =========================================================================
+% PHẦN II: CƠ SỞ TOÁN HỌC VÀ CÔNG THỨC HÓA HỆ THỐNG
+% =========================================================================
+\section{Cơ sở Toán học và Công thức hóa Hệ thống}\label{sec:toan-hoc}
+
+\subsection{Ước lượng Trạng thái Người học (Learner State Estimation)}\label{subsec:state-estimation}
+Gọi sinh viên là $i \in \{1, \dots, N\}$, câu hỏi tương tác là $q \in \mathcal{Q}$, nhóm câu hỏi (bundle) là $b$, và kỹ năng/kiến thức liên kết là $k \in \mathcal{K}$. Lịch sử tương tác của sinh viên $i$ tính đến trước thời điểm làm câu hỏi $q$ được ký hiệu là:
+\begin{equation}\label{eq:history}
+  \mathcal{H}_{i, t} = \big( (q_1, y_{i,1}, \Delta \tau_1), (q_2, y_{i,2}, \Delta \tau_2), \dots, (q_t, y_{i,t}, \Delta \tau_t) \big)
+\end{equation}
+trong đó $y_{i,t} \in \{0, 1\}$ là phản hồi quan sát được (1: Đúng, 0: Sai), và $\Delta \tau_t$ là thời gian hoàn thành câu hỏi (elapsed time).
+
+\subsubsection{Mô hình Truy vết Kiến thức Sâu (Deep Knowledge Tracing - DKT)}
+Xác suất trả lời đúng của sinh viên $i$ đối với câu hỏi $q$ tại thời điểm $t+1$ được mô hình hóa qua mạng nơ-ron hồi quy GRU kết hợp ma trận nhúng nội dung và kỹ năng:
+\begin{equation}\label{eq:gru-kt}
+  \mathbf{h}_{i, t} = \text{GRU}\big(\mathbf{h}_{i, t-1}, [\mathbf{e}_q; y_{i, t}; \log(1 + \Delta \tau_t)]\big)
+\end{equation}
+\begin{equation}\label{eq:prob-correct}
+  p_{i, q} = P(y_{i, q} = 1 \mid \mathcal{H}_{i, t}, q) = \sigma\big(\mathbf{w}_q^T \mathbf{h}_{i, t} + b_q\big)
+\end{equation}
+với $\mathbf{e}_q \in \mathbb{R}^d$ là vector nhúng câu hỏi kết hợp kỹ năng, và $\sigma(z) = \frac{1}{1 + e^{-z}}$ là hàm sigmoid. Hàm mất mát tối ưu hóa cho mô hình ước lượng là Cross-Entropy có trọng số mặt nạ hợp lệ:
+\begin{equation}\label{eq:loss-kt}
+  \mathcal{L}_{KT} = - \frac{1}{N_{valid}} \sum_{i} \sum_{t} \mathbb{I}_{valid}(i,t) \cdot \big[ y_{i,t} \ln p_{i,q_t} + (1 - y_{i,t}) \ln (1 - p_{i,q_t}) \big]
+\end{equation}
+
+\subsubsection{Đo lường Mức độ Nắm vững Kiến thức Chuẩn tắc (Standardized Probe Mastery)}
+Để tránh sự sai lệch khi sinh viên làm các câu hỏi có độ khó khác nhau, ClassTwin định nghĩa mức độ nắm vững chuẩn tắc (\textit{Probe Mastery}) của sinh viên $i$ trên kỹ năng $k$ bằng kỳ vọng xác suất đúng trên một tập câu hỏi kiểm định cố định $\mathcal{P}_k$ đã được cân bằng độ khó:
+\begin{equation}\label{eq:probe-mastery}
+  m_{i, k, t} = \frac{1}{|\mathcal{P}_k|} \sum_{q^* \in \mathcal{P}_k} P(y = 1 \mid \mathcal{H}_{i, t}, q^*)
+\end{equation}
+Chỉ số này bảo đảm tính khách quan tuyệt đối, cho phép so sánh sự tiến bộ của người học qua các thời điểm khác nhau.
+
+\subsection{Động lực học Bản sao số Lớp học (Classroom Digital Twin Dynamics)}\label{subsec:twin-dynamics}
+Trạng thái ẩn nội tại của sinh viên $i$ tại bước quyết định $t$ được biểu diễn bởi $z_{i, t} \in \mathcal{Z}$. Quá trình chuyển dịch trạng thái của từng cá nhân chịu sự tác động đồng thời của động lực học tự nhiên $\mathcal{T}_\theta$ (học được từ dữ liệu lịch sử) và mô hình tác động can thiệp sư phạm $\phi$:
+\begin{equation}\label{eq:individual-transition}
+  z_{i, t+1} \sim \mathcal{T}_{\theta, \phi}\big(z_{i, t}, a_t, \mathbf{c}_t, \Delta t, \mathbf{e}_{context, t}\big)
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $a_t \in \mathcal{A}$ là hành động can thiệp của giảng viên (ví dụ: thuyết trình, quiz, thảo luận nhóm, giải lao).
+  \item $\mathbf{c}_t$ là nội dung/chủ đề học tập hiện tại.
+  \item $\Delta t$ là thời lượng diễn ra hành động.
+  \item $\mathbf{e}_{context, t} = [\text{CO}_2, \text{Temp}, \text{Noise}, \mathbf{mask}]$ là vector bối cảnh vi khí hậu phòng học.
+  \item $\phi$ là vector tham số kịch bản phản thực mô tả biên độ tác động can thiệp (ví dụ: $\phi_{thảo\_luận}$ làm tăng độ hiểu bài nhưng tiêu hao năng lượng nhận thức).
+\end{itemize}
+
+\subsubsection{Tổng hợp Trạng thái Toàn lớp (Classroom State Aggregation)}
+Trạng thái của tập thể lớp học ảo gồm $N$ sinh viên tại thời điểm $t$ được tổng hợp thành vector trạng thái khả kiến $\mathbf{x}_t \in \mathbb{R}^D$:
+\begin{equation}\label{eq:class-state}
+  \mathbf{x}_t = \Big[ \bar{m}_t, \mathbf{q}_{0.25}(m_t), \mathbf{q}_{0.75}(m_t), \text{Var}(m_t), \rho_{low, t}, \bar{\mathbf{f}}_t, \mathbf{e}_{context, t}, T_{remain}, a_{t-1}, \Delta t_{elapsed} \Big]
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $\bar{m}_t = \frac{1}{N} \sum_{i=1}^N m_{i, k, t}$ là mức độ nắm vững trung bình toàn lớp.
+  \item $\mathbf{q}_{0.25}(m_t)$ là phân vị 25\% (đại diện cho nhóm học sinh yếu trong lớp).
+  \item $\rho_{low, t} = \frac{1}{N} \sum_{i=1}^N \mathbb{I}(m_{i, k, t} < \lambda_{weak})$ là tỷ lệ học sinh đang dưới ngưỡng báo động.
+  \item $\bar{\mathbf{f}}_t$ là vector trung bình các đặc trưng hành vi (nhịp độ làm bài, số lần đổi phương án, độ trễ tương tác).
+  \item $T_{remain}$ là thời lượng còn lại của buổi học (phút).
+\end{itemize}
+
+\subsection{Bài toán Quyết định POMDP và Bán Markov}\label{subsec:pomdp-formulation}
+Môi trường lớp học thực tế là một Quá trình Quyết định Markov Quan sát Một phần (Partially Observable Markov Decision Process - POMDP) hữu hạn thời gian, định nghĩa bởi bộ 7 thành phần:
+\begin{equation}\label{eq:pomdp-tuple}
+  \mathcal{M} = \langle \mathcal{S}, \mathcal{A}, \mathcal{T}, \mathcal{R}, \Omega, \mathcal{O}, \gamma \rangle
+\end{equation}
+Do trạng thái thực $s_t \in \mathcal{S}$ không thể quan sát toàn vẹn, tác tử AI hoạt động trên vector ước lượng niềm tin (\textit{belief state approximation}) $\mathbf{x}_t \approx \mathbf{b}_t = P(s_t \mid \mathcal{H}_{\le t})$.
+
+\subsubsection{Hệ số Chiết khấu Theo Thời lượng Bán Markov (Semi-Markov Discounting)}
+Vì mỗi hoạt động sư phạm $a_t$ kéo dài một khoảng thời gian thực $\Delta t$ khác nhau (từ 3 phút đến 15 phút), ta áp dụng công thức chiết khấu phụ thuộc thời gian chuẩn tắc:
+\begin{equation}\label{eq:semi-markov-discount}
+  \gamma(\Delta t) = \gamma_{base}^{\frac{\Delta t}{\tau_0}} \quad \text{với} \quad \tau_0 = 60\text{ giây}, \; \gamma_{base} = 0.99
+\end{equation}
+Quy tắc này bảo đảm tính nhất quán toán học khi tích lũy phần thưởng trong các bước chuyển có thời lượng không đồng nhất.
+
+\subsection{Hàm Phần thưởng Đa Mục tiêu và Ràng buộc Nghiêm ngặt}\label{subsec:reward-constraints}
+Chính sách giảng dạy phải dung hòa giữa việc nâng cao năng lực học tập, bảo vệ nhóm học sinh yếu, đồng thời kiểm soát khối lượng công việc của giảng viên để không gây kiệt sức (\textit{burnout}). Hàm phần thưởng tức thời $r_t$ được cấu thành bởi 4 thành phần:
+\begin{equation}\label{eq:reward-function}
+  r_t = w_m \cdot \Delta \bar{M}_t + w_l \cdot \Delta M_{low, t} - w_c \cdot \text{Workload}(a_t) - w_s \cdot \mathbb{I}(a_t \ne a_{t-1})
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $\Delta \bar{M}_t = \bar{m}_{t+1} - \bar{m}_t$ là mức tăng trưởng độ hiểu bài trung bình của toàn lớp.
+  \item $\Delta M_{low, t} = \mathbf{q}_{0.25}(m_{t+1}) - \mathbf{q}_{0.25}(m_t)$ là mức cải thiện của nhóm 25\% sinh viên yếu nhất.
+  \item $\text{Workload}(a_t)$ là chi phí nhận thức/công sức của giảng viên khi chủ trì hoạt động (ví dụ: Chấm bài/điều phối thảo luận có chi phí cao hơn bài giảng truyền thống).
+  \item $\mathbb{I}(a_t \ne a_{t-1})$ là hình phạt chống đổi hoạt động quá dồn dập gây mất tập trung.
+\end{itemize}
+
+\subsubsection{Bài toán Tối ưu Chính sách có Ràng buộc (Constrained Policy Optimization)}
+Mục tiêu là tìm kiếm chính sách $\pi^*(a \mid \mathbf{x})$ tối đa hóa kỳ vọng phần thưởng tích lũy, thỏa mãn hai ràng buộc bất khả xâm phạm:
+\begin{equation}\label{eq:constrained-objective}
+  \max_{\pi} \; \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \gamma_{0:t} \, r_t \right]
+\end{equation}
+\begin{equation}\label{eq:constraint-workload}
+  \text{thỏa mãn:} \quad \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \text{Workload}(a_t) \right] \le B_{max} \quad \text{(Ngân sách công sức giảng viên)}
+\end{equation}
+\begin{equation}\label{eq:constraint-fairness}
+  \text{và:} \quad \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \max\big(0, -\Delta M_{low, t}\big) \right] \le \epsilon_{harm} \quad \text{(Bảo vệ sinh viên yếu)}
+\end{equation}
+
+\subsection{Thuật toán Offline RL: Conservative Q-Learning (CQL)}\label{subsec:cql}
+Để huấn luyện tác tử sư phạm từ dữ liệu tương tác lịch sử $\mathcal{D}$ mà không gặp phải hiện tượng thổi phồng giá trị ngoại phân phối (\textit{out-of-distribution value overestimation}), ClassTwin áp dụng thuật toán \textbf{Discrete Conservative Q-Learning (CQL)} kết hợp mặt nạ hành vi hợp lệ $\mathcal{A}_{valid}(\mathbf{x}_t)$:
+
+\begin{equation}\label{eq:td-target}
+  y_{TD} = r_t + \gamma(\Delta t) \cdot (1 - d_t) \cdot \max_{a' \in \mathcal{A}_{valid}(\mathbf{x}_{t+1})} Q_{\bar{\theta}}(\mathbf{x}_{t+1}, a')
+\end{equation}
+Hàm mục tiêu tối thiểu hóa tổn thất của hàm Q-network với trọng số bảo thủ $\alpha$:
+\begin{equation}\label{eq:cql-loss}
+  \mathcal{L}_{CQL}(\theta) = \frac{1}{2} \mathbb{E}_{(\mathbf{x}, a, r, \mathbf{x}') \sim \mathcal{D}} \left[ \big(Q_\theta(\mathbf{x}, a) - y_{TD}\big)^2 \right] + \alpha \cdot \mathbb{E}_{\mathbf{x} \sim \mathcal{D}} \left[ \ln \sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\big(Q_\theta(\mathbf{x}, a')\big) - Q_\theta(\mathbf{x}, a_\mathcal{D}) \right]
+\end{equation}
+Số hạng điều chuẩn $\alpha$ có tác dụng dìm thấp giá trị Q của những hành động chưa từng được thử nghiệm trong dữ liệu lịch sử, buộc chính sách luôn đưa ra các quyết định nằm trong vùng an toàn đã được kiểm chứng.
+
+\newpage
+
+% =========================================================================
+% PHẦN III: TRÌNH DIỄN THUẬT TOÁN VÀ MÃ GIẢ (PSEUDOCODE)
+% =========================================================================
+\section{Trình diễn Thuật toán và Mã giả (Pseudocode)}\label{sec:thuat-toan}
+
+Phần này trình diễn chi tiết 4 thuật toán xương sống của hệ thống ClassTwin dưới dạng mã giả chuẩn mực để các kỹ sư AI, chuyên gia dữ liệu và nhà nghiên cứu sư phạm trong đội ngũ dễ dàng đối soát và hiện thực hóa bằng mã nguồn Python.
+
+\subsection{Thuật toán 1: Ước lượng Trạng thái Người học và Đo lường Mastery}\label{subsec:algo-estimator}
+Thuật toán~\ref{algo:state-estimator} chịu trách nhiệm xử lý chuỗi sự kiện học tập ngoại tuyến hoặc trực tuyến, duy trì bộ nhớ ẩn GRU và trích xuất chỉ số nắm vững kiến thức chuẩn mực thông qua tập probe đã được cân bằng.
+
+\begin{algorithm}[H]
+\caption{Ước lượng Trạng thái Người học \& Đo lường Probe Mastery}\label{algo:state-estimator}
+\begin{algorithmic}[1]
+\Require Chuỗi sự kiện tương tác của sinh viên $i$: $\mathcal{E}_i = \{e_1, e_2, \dots, e_t\}$; Tập probe kỹ năng $\mathcal{P}_k$; Mô hình $\text{GRU}_{\mathbf{w}}$.
+\Ensure Vector trạng thái ẩn $\mathbf{h}_{i, t}$; Mức độ nắm vững ước lượng $m_{i, k, t}$; Độ bất định $\sigma_{i, k, t}$.
+\State Khởi tạo trạng thái ẩn từ phân phối tiên nghiệm: $\mathbf{h}_{i, 0} \leftarrow \mathbf{h}_{prior}$, số quan sát $n_{obs} \leftarrow 0$
+\For{mỗi sự kiện $e_\tau = \langle q_\tau, y_\tau, \Delta \tau \rangle \in \mathcal{E}_i$}
+    \State Trích xuất vector nhúng câu hỏi và đặc trưng: $\mathbf{x}_\tau \leftarrow \big[ \text{Embed}(q_\tau); y_\tau; \log(1 + \Delta \tau) \big]$
+    \State Cập nhật trạng thái bộ nhớ ẩn: $\mathbf{h}_{i, \tau} \leftarrow \text{GRU}_{\mathbf{w}}\big(\mathbf{h}_{i, \tau-1}, \mathbf{x}_\tau\big)$
+    \State $n_{obs} \leftarrow n_{obs} + 1$
+\EndFor
+\State \textbf{// Tính toán mức nắm vững kiến thức thông qua tập câu hỏi Probe chuẩn hóa}
+\State Khởi tạo tổng xác suất $S_{prob} \leftarrow 0$
+\For{mỗi câu hỏi kiểm định $q^* \in \mathcal{P}_k$}
+    \State Tính xác suất trả lời đúng có điều kiện:
+    \State $p(y=1 \mid \mathbf{h}_{i, t}, q^*) \leftarrow \sigma\big(\mathbf{w}_{q^*}^T \mathbf{h}_{i, t} + b_{q^*}\big)$
+    \State $S_{prob} \leftarrow S_{prob} + p(y=1 \mid \mathbf{h}_{i, t}, q^*)$
+\EndFor
+\State $m_{i, k, t} \leftarrow \frac{1}{|\mathcal{P}_k|} \cdot S_{prob}$
+\State \textbf{// Ước lượng độ bất định dựa trên kích thước mẫu quan sát}
+\State $\sigma_{i, k, t} \leftarrow \frac{1}{\sqrt{1 + n_{obs}}} + \text{Var}_{q^* \in \mathcal{P}_k}\big(p(y=1 \mid \mathbf{h}_{i, t}, q^*)\big)$
+\State \Return $\mathbf{h}_{i, t}, m_{i, k, t}, \sigma_{i, k, t}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 2: Mô phỏng Động lực học Phản thực (Digital Twin Rollout)}\label{subsec:algo-twin-rollout}
+Thuật toán~\ref{algo:twin-rollout} đóng vai trò lõi giả lập (\textit{Simulation Engine}) của Bản sao số. Trước khi một hành động $a$ được gợi ý cho giảng viên, thuật toán sẽ tiến hành phân tích kịch bản ``What-if?'' trên toàn bộ lớp học ảo gồm $N$ sinh viên.
+
+\begin{algorithm}[H]
+\caption{Mô phỏng Phản thực Lớp học (Counterfactual Digital Twin Rollout)}\label{algo:twin-rollout}
+\begin{algorithmic}[1]
+\Require Snapshot lớp học hiện tại $\mathcal{C}_t = \{z_{1,t}, \dots, z_{N,t}\}$; Ứng viên can thiệp $a \in \mathcal{A}$; Thời lượng $\Delta t$; Tập kịch bản $\Phi = \{\phi^{(1)}, \dots, \phi^{(M)}\}$; Số lượng mẫu Monte-Carlo $K$.
+\Ensure Phân phối kỳ vọng phần thưởng $\mathbb{E}[r]$, khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ và mức cải thiện của nhóm yếu $\Delta M_{low}$.
+\State Khởi tạo mảng kết quả mô phỏng $\mathcal{R}_{sim} \leftarrow [\;]$
+\For{mỗi kịch bản phản thực $\phi^{(m)} \in \Phi$}
+    \For{vòng lặp lấy mẫu nhiễu ngẫu nhiên $k = 1 \to K$}
+        \State Khởi tạo lớp học sau can thiệp $\mathcal{C}_{t+1}^{(m, k)} \leftarrow \emptyset$
+        \For{từng sinh viên $i = 1 \to N$}
+            \State Sinh biến nhiễu ngẫu nhiên hành vi: $\epsilon_i \sim \mathcal{N}(0, \Sigma_{env})$
+            \State Cập nhật trạng thái cá nhân dưới tác động của $(a, \Delta t, \phi^{(m)})$ theo CT~\eqref{eq:individual-transition}:
+            \State $z_{i, t+1} \leftarrow \mathcal{T}_{\theta}\big(z_{i, t}, a, \Delta t, \mathbf{c}_t\big) + \Delta z\big(\phi^{(m)}, a\big) + \epsilon_i$
+            \State Đo lường độ hiểu bài mới $m_{i, t+1}$ qua tập probe $\mathcal{P}_k$
+            \State Thêm $z_{i, t+1}$ vào $\mathcal{C}_{t+1}^{(m, k)}$
+        \EndFor
+        \State Tính độ hiểu bài trung bình mới $\bar{M}_{t+1}$ và phân vị nhóm yếu $M_{low, t+1}$ từ $\mathcal{C}_{t+1}^{(m, k)}$
+        \State Tính phần thưởng mô phỏng $r^{(m, k)}$ theo công thức~\eqref{eq:reward-function}
+        \State Lưu $r^{(m, k)}$ vào danh sách $\mathcal{R}_{sim}$
+    \EndFor
+\EndFor
+\State Tính toán phân vị thống kê: $\text{Median} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.50)$
+\State $\text{P}_{10} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.10)$, $\text{P}_{90} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.90)$
+\State \Return $\text{Median}, [\text{P}_{10}, \text{P}_{90}], \Delta M_{low}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 3: Tối ưu Chính sách Sư phạm Bằng Constrained Offline RL}\label{subsec:algo-cql-train}
+Thuật toán~\ref{algo:cql-train} mô tả quy trình huấn luyện mạng nơ-ron chính sách $Q_\theta(\mathbf{x}, a)$ trên tập dữ liệu chuyển dịch tổng hợp/lịch sử $\mathcal{D}$, áp dụng mặt nạ hành động khả thi và cơ chế phạt bảo thủ CQL.
+
+\begin{algorithm}[H]
+\caption{Huấn luyện Chính sách Sư phạm Offline bằng Constrained CQL}\label{algo:cql-train}
+\begin{algorithmic}[1]
+\Require Tập dữ liệu chuyển dịch $\mathcal{D} = \{(\mathbf{x}, a, r, \mathbf{x}', \Delta t, d)\}$; Hệ số phạt bảo thủ $\alpha$; Tốc độ học $\eta$; Trọng số mục tiêu cập nhật mềm $\tau_{polyak}$; Ngân sách $B_{max}$.
+\Ensure Mạng giá trị Q-network đã hội tụ $Q_\theta^*(\mathbf{x}, a)$.
+\State Khởi tạo trọng số mạng Q chính $\theta$ ngẫu nhiên, mạng đích $\bar{\theta} \leftarrow \theta$
+\For{epoch $= 1 \to \text{MaxEpochs}$}
+    \For{mỗi mini-batch $\mathcal{B} \sim \mathcal{D}$}
+        \For{từng mẫu chuyển dịch $(\mathbf{x}_j, a_j, r_j, \mathbf{x}'_j, \Delta t_j, d_j) \in \mathcal{B}$}
+            \State Xác định mặt nạ hành động hợp lệ tại $\mathbf{x}'_j$: $\mathcal{A}_{valid}(\mathbf{x}'_j) \leftarrow \text{FilterMask}(\mathbf{x}'_j, B_{max})$
+            \State Tính hệ số chiết khấu Bán Markov: $\gamma_j \leftarrow \gamma_{base}^{\Delta t_j / \tau_0}$
+            \State Tính giá trị TD Target có áp dụng mặt nạ:
+            \State $y_{TD, j} \leftarrow r_j + \gamma_j \cdot (1 - d_j) \cdot \max_{a' \in \mathcal{A}_{valid}(\mathbf{x}'_j)} Q_{\bar{\theta}}(\mathbf{x}'_j, a')$
+        \EndFor
+        \State \textbf{// Tính gradient tổn thất Bellman chuẩn tắc}
+        \State $\nabla_\theta \mathcal{L}_{TD} \leftarrow \frac{1}{|\mathcal{B}|} \sum_{j \in \mathcal{B}} \big(Q_\theta(\mathbf{x}_j, a_j) - y_{TD, j}\big) \nabla_\theta Q_\theta(\mathbf{x}_j, a_j)$
+        \State \textbf{// Tính gradient số hạng điều chuẩn bảo thủ CQL}
+        \State $\nabla_\theta \mathcal{L}_{CQL} \leftarrow \frac{\alpha}{|\mathcal{B}|} \sum_{j \in \mathcal{B}} \left[ \sum_{a' \in \mathcal{A}_{valid}} \frac{\exp(Q_\theta(\mathbf{x}_j, a'))}{\sum \exp(Q_\theta(\mathbf{x}_j, \cdot))} \nabla_\theta Q_\theta(\mathbf{x}_j, a') - \nabla_\theta Q_\theta(\mathbf{x}_j, a_j) \right]$
+        \State Cập nhật trọng số mạng bằng thuật toán AdamW:
+        \State $\theta \leftarrow \theta - \eta \cdot \big(\nabla_\theta \mathcal{L}_{TD} + \nabla_\theta \mathcal{L}_{CQL}\big)$
+        \State Cập nhật mềm mạng trọng số đích: $\bar{\theta} \leftarrow \tau_{polyak} \theta + (1 - \tau_{polyak}) \bar{\theta}$
+    \EndFor
+\EndFor
+\State \Return $Q_\theta$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 4: Suy luận Trực tuyến và Hỗ trợ Quyết định Giảng viên}\label{subsec:algo-online-inference}
+Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tương tác thời gian thực tại lớp học, tích hợp kiểm tra ngưỡng an toàn (\textit{Safe Fallback}) và cơ chế phản hồi của con người (\textit{Human-in-the-Loop}).
+
+\begin{algorithm}[H]
+\caption{Vòng lặp Suy luận Trực tuyến \& Hỗ trợ Quyết định Giảng viên}\label{algo:online-inference}
+\begin{algorithmic}[1]
+\Require Định danh lớp học $\text{class\_id}$; Dòng sự kiện thời gian thực $\mathcal{E}_{stream}$; Thời gian còn lại $T_{remain}$; Ngưỡng dữ liệu hợp lệ $\Lambda_{cov} = 0.65$; Ngưỡng bất định tối đa $\Sigma_{max} = 0.40$.
+\Ensure Gợi ý sư phạm khả thi $a^*$; Báo cáo giải thích minh bạch $\mathcal{X}_{reason}$.
+\State Thu thập và làm sạch các sự kiện trong cửa sổ trễ $\Delta W$: $\mathbf{E} \leftarrow \text{IngestAndVerify}(\mathcal{E}_{stream})$
+\State Cập nhật trạng thái ẩn từng sinh viên: $\forall i, \mathbf{h}_{i, t} \leftarrow \text{UpdateState}(\mathbf{h}_{i, t-1}, \mathbf{E}_i)$
+\State Tính tỷ lệ bao phủ dữ liệu hợp lệ: $\text{Coverage} \leftarrow \frac{N_{observed}}{N_{enrolled}}$
+\State \textbf{if} $\text{Coverage} < \Lambda_{cov}$ \textbf{or} $\text{Uncertainty} > \Sigma_{max}$ \textbf{then}
+    \State Kích hoạt cơ chế an toàn: $a^* \leftarrow \text{RuleBasedDefault}(T_{remain})$
+    \State $\mathcal{X}_{reason} \leftarrow \text{``Chưa đủ dữ liệu quan sát tin cậy. Đề xuất giữ nguyên tiến trình giảng.''}$
+    \State \Return $a^*, \mathcal{X}_{reason}$
+\State \textbf{end if}
+\State Tổng hợp vector trạng thái lớp học $\mathbf{x}_t$ theo công thức~\eqref{eq:class-state}
+\State Lọc danh sách hành động khả thi: $\mathcal{A}_{cand} \leftarrow \text{MaskActions}(\mathbf{x}_t, T_{remain})$
+\State Chọn hành động tối ưu theo chính sách CQL: $a^* \leftarrow \arg\max_{a \in \mathcal{A}_{cand}} Q_\theta^*(\mathbf{x}_t, a)$
+\State Chạy mô phỏng phản thực (Thuật toán~\ref{algo:twin-rollout}) để sinh khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ của $a^*$
+\State Tạo bản giải thích sư phạm tự nhiên $\mathcal{X}_{reason}$ dựa trên phân phối năng lực lớp học
+\State Gửi gói gợi ý lên \textbf{Teacher App Dashboard}: $\langle a^*, \Delta t, [\text{P}_{10}, \text{P}_{90}], \mathcal{X}_{reason} \rangle$
+\State \textbf{// Con người chốt quyết định (Human-in-the-Loop)}
+\State Nhận phản hồi từ giảng viên: $\text{decision} \in \{\text{ACCEPT}, \text{MODIFY}, \text{REJECT}\}$
+\State Ghi nhận hành động thực thi $a_{executed}$ và thời lượng thực tế vào nhật ký $\mathcal{D}_{log}$
+\State \Return $a_{executed}$
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+
+% =========================================================================
+% PHẦN IV: KIẾN TRÚC HỆ THỐNG VÀ BẢO MẬT DỮ LIỆU
+% =========================================================================
+\section{Kiến trúc Hệ thống, Dữ liệu và Pipeline Triển khai}\label{sec:kien-truc-ky-thuat}
+
+\subsection{Thiết kế Phân tầng Edge-to-Cloud}\label{subsec:edge-to-cloud}
+Để bảo đảm tính khả thi khi vận hành tại các trường đại học mà không đòi hỏi nâng cấp toàn bộ hạ tầng mạng, ClassTwin áp dụng kiến trúc phân tầng \textbf{Edge-to-Cloud} tối ưu (Hình~\ref{fig:architecture}):
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tcolorbox}[colback=white, colframe=TealPrimary, boxrule=1pt, arc=3pt, width=0.98\textwidth]
+    \small
+    \textbf{[TẦNG 1: PHÒNG HỌC THỰC TẾ -- EDGE LAYER]}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Cảm biến Vi khí hậu IoT:} Đo nồng độ $\text{CO}_2$ (ppm), nhiệt độ phòng ($^\circ\text{C}$), và độ ồn môi trường tổng hợp ($\text{dB}$). Truyền dữ liệu qua sóng BLE/Zigbee nội bộ.
+      \item \textbf{Classroom Edge Gateway (Raspberry Pi 4 / Intel NUC mini):} Tiếp nhận dữ liệu cảm biến, đồng bộ timestamp NTP. Thực hiện lọc nhiễu, mã hóa một chiều danh tính sinh viên (\textit{Privacy Filter}) và đệm dữ liệu cục bộ khi mất mạng.
+      \item \textbf{Teacher Tablet / Laptop App:} Ứng dụng giao diện giảng viên hiển thị Dashboard trạng thái lớp học và các nút bấm tương tác 1 chạm (Duyệt / Tùy biến / Từ chối).
+    \end{itemize}
+    \vspace{1mm}
+    \centering\textbf{$\big\Downarrow$ Kết nối Bảo mật Mạng Trường học / SSL RESTful \& gRPC API $\big\Downarrow$}
+    \vspace{1mm}
+    \raggedright
+    \textbf{[TẦNG 2: MÁY CHỦ TRƯỜNG / CLOUD COMPUTING ENGINE]}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Data Lakehouse \& Parquet Shard Store:} Lưu trữ dữ liệu lịch sử chuẩn hóa theo định dạng cột nén Parquet phân mảnh theo session và học kỳ.
+      \item \textbf{State Estimator \& Digital Twin Rollout Service:} Dịch vụ tính toán hiệu năng cao chạy mô hình GRU và giả lập phản thực Monte-Carlo. Bộ nhớ đệm trạng thái Redis In-Memory bảo đảm độ trễ phản hồi dưới 1 giây.
+      \item \textbf{Offline RL Training Pipeline:} Định kỳ tái huấn luyện chính sách CQL theo lô (batch retraining) trên máy chủ GPU chuyên dụng (hoặc phiên bản Kaggle/Colab GPU trong giai đoạn nghiên cứu).
+      \item \textbf{LMS Connector Hub:} Tích hợp chuẩn LTI (Learning Tools Interoperability) chuẩn hóa vào các nền tảng Moodle, Canvas, Blackboard, Microsoft Teams Education.
+    \end{itemize}
+  \end{tcolorbox}
+  \caption{Sơ đồ kiến trúc phân bổ Edge-to-Cloud của giải pháp ClassTwin}\label{fig:architecture}
+\end{figure}
+
+\subsection{Hợp đồng Dữ liệu Chuẩn hóa (Canonical Schemas)}\label{subsec:schemas}
+Dữ liệu thô từ các tập tin ZIP quy mô lớn được chuyển đổi thành 4 bảng dữ liệu chuẩn hóa nén Parquet:
+\begin{enumerate}
+  \item \textbf{\texttt{content\_items}:} Danh mục câu hỏi, bài giảng, nhãn kỹ năng và độ khó nội dung.
+  \item \textbf{\texttt{events}:} Bản ghi chuỗi thao tác của người học kèm tem thời gian chuẩn hóa và nguồn gốc dữ liệu (\textit{provenance}).
+  \item \textbf{\texttt{attempts}:} Kết quả làm bài thực tế của sinh viên, độ trễ và nhãn đúng/sai được kiểm định.
+  \item \textbf{\texttt{teacher\_decisions}:} Nhật ký các đề xuất từ AI và hành động thực thi thực tế của giảng viên, đóng vai trò tập dữ liệu chuyển dịch quý giá cho việc tái huấn luyện chính sách ngoại tuyến.
+\end{enumerate}
+
+\newpage
+
+% =========================================================================
+% PHẦN V: CHIẾN LƯỢC KINH DOANH, MÔ HÌNH DOANH THU VÀ KHÁCH HÀNG
+% =========================================================================
+\section{Chiến lược Kinh doanh, Mô hình Doanh thu và Thị trường}\label{sec:chien-luoc-kinh-doanh}
+
+Để một đề án khoa học công nghệ phát triển bền vững và không dừng lại ở mức bài báo học thuật, nhóm nghiên cứu đã xây dựng một chiến lược thương mại hóa toàn diện, xác lập rõ đối tượng khách hàng mục tiêu, các nguồn tạo ra dòng tiền và lộ trình thâm nhập thị trường (Go-To-Market - GTM) sắc bén.
+
+\subsection{Phân tích Đối tượng Khách hàng Mục tiêu (Customer Personas)}\label{subsec:khach-hang-muc-tieu}
+Thị trường mục tiêu của ClassTwin được phân bổ theo mô hình \textbf{B2B (Business-to-Business)} và \textbf{B2B2C}, nhắm vào 4 phân khúc khách hàng trọng điểm (Bảng~\ref{tab:customer-segments}):
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Ma trận phân khúc khách hàng mục tiêu của ClassTwin}\label{tab:customer-segments}
+  \begin{tabularx}{\textwidth}{p{2.8cm} p{3.8cm} p{4.2cm} X}
+    \toprule
+    \textbf{Phân khúc} & \textbf{Quy mô \& Đặc thù} & \textbf{Nỗi đau Khách hàng (Pain Points)} & \textbf{Giá trị Đem lại của ClassTwin} \\
+    \midrule
+    \textbf{1. Trường Đại học \& Cao đẳng (Khối B2B Chủ lực)} & Giảng đường lớn từ 60--150 sinh viên/lớp. Các trường công lập và tư thục đang đẩy mạnh chuyển đổi số giáo dục. & Tỷ lệ sinh viên rớt môn cao ở các môn đại cương/cơ sở ngành; giảng viên quá tải, không thể cá nhân hóa; thiếu dữ liệu kiểm định chất lượng đào tạo. & Nâng cao tỷ lệ qua môn 15--25\%; giảm tải nhận thức cho giảng viên; cung cấp bảng điều khiển phân tích học tập (\textit{Learning Analytics}) chuẩn kiểm định ABET/AUN-QA. \\
+    \addlinespace
+    \textbf{2. Hệ thống Phổ thông Tư thục / Quốc tế (K-12 Cao cấp)} & Phổ thông liên cấp chất lượng cao, học phí cao, phụ huynh đòi hỏi sự chăm sóc sư phạm cá nhân hóa cao. & Giáo viên mất nhiều thời gian quan sát thủ công; áp lực chứng minh tính cá nhân hóa trong giảng dạy với ban giám hiệu và phụ huynh học sinh. & Bản sao số giúp giáo viên nắm bắt tức thời điểm nghẽn kiến thức của từng học sinh; tối ưu hóa cấu trúc tiết học; cam kết bảo vệ dữ liệu không camera. \\
+    \addlinespace
+    \textbf{3. Trung tâm Đào tạo Kỹ năng \& Luyện thi Quy mô lớn} & Các chuỗi trung tâm IELTS, lập trình Bootcamp, chứng chỉ kế toán/tài chính (CFA, ACCA) có từ 20--50 học viên/lớp. & Tỷ lệ hoàn thành khóa học (Completion Rate) thấp; chất lượng giảng dạy phụ thuộc quá lớn vào một vài giáo viên ngôi sao; khó chuẩn hóa phương pháp. & Chuẩn hóa quy trình can thiệp sư phạm; biến kinh nghiệm của giáo viên giỏi thành chính sách AI hỗ trợ các trợ giảng và giáo viên trẻ. \\
+    \addlinespace
+    \textbf{4. Các Nền tảng LMS / EdTech Quốc tế} & Moodle Enterprise, Canvas LMS, Topica, Kyna, các nền tảng học trực tuyến quy mô lớn. & Hệ thống LMS truyền thống chỉ mang tính thụ động (lưu trữ file, nộp bài); thiếu công cụ AI tương tác thời gian thực hỗ trợ giáo viên. & Tích hợp ClassTwin dưới dạng Plugin thông minh (LTI App); chia sẻ doanh thu (\textit{Revenue Share}) theo lượng tài khoản người dùng hoạt động. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Mô hình Kiếm Lợi nhuận và Dòng Doanh thu (Monetization Models)}\label{subsec:monetization}
+ClassTwin xây dựng mô hình doanh thu đa tầng (\textit{Multi-tiered Revenue Streams}) vững chắc kết hợp giữa phần mềm dịch vụ đám mây (SaaS), thiết bị phần cứng thông minh (HaaS) và dịch vụ tư vấn dữ liệu chuyên sâu (Hình~\ref{fig:revenue-model}).
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tcolorbox}[colback=LightBg, colframe=NavyBlue, boxrule=1pt, arc=4pt, width=0.98\textwidth]
+    \small
+    \textbf{DÒNG DOANH THU 1: B2B SaaS SUBSCRIPTION (THU PHÍ ĐỊNH KỲ PHẦN MỀM)}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Gói Tiêu chuẩn (Standard Tier - 25.000 VNĐ / sinh viên / kỳ):} Cung cấp Plugin tích hợp LMS, mô hình ước lượng trạng thái người học DKT, bảng điều khiển phân tích mức độ hiểu bài chuẩn tắc (Probe Mastery) sau buổi học.
+      \item \textbf{Gói Nâng cao (Professional Tier - 60.000 VNĐ / sinh viên / kỳ):} Mở khóa toàn bộ tính năng Bản sao số Digital Twin mô phỏng phản thực thời gian thực, AI gợi ý quyết định can thiệp sư phạm (Offline RL), hỗ trợ tối đa 50 lớp học đồng thời.
+      \item \textbf{Gói Doanh nghiệp Toàn trường (Enterprise / Campus License - 150--350 triệu VNĐ / năm / trường):} Không giới hạn số lượng sinh viên; hỗ trợ triển khai máy chủ riêng (On-premise Private Cloud) đáp ứng quy định khắt khe về bảo mật dữ liệu của nhà trường; tùy biến kịch bản can thiệp chuyên biệt theo từng khoa/bộ môn.
+    \end{itemize}
+    \vspace{1mm}
+    \textbf{DÒNG DOANH THU 2: HARDWARE-AS-A-SERVICE (HaaS) \& GÓI THIẾT BỊ EDGE GATEWAY}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Bộ thiết bị IoT Phòng học Thông minh (ClassTwin IoT Kit):} Bán trọn gói hoặc cho thuê định kỳ (500.000 VNĐ / phòng / tháng) gồm: 01 Edge Gateway mini cài sẵn firmware bảo mật + 01 Cụm cảm biến công nghiệp ($\text{CO}_2$, nhiệt độ, độ ồn) không dây BLE.
+      \item Dịch vụ bảo trì, kiểm định và thay thế phần cứng định kỳ 6 tháng/lần.
+    \end{itemize}
+    \vspace{1mm}
+    \textbf{DÒNG DOANH THU 3: API LICENSING CHO ĐỐI TÁC EDTECH}
+    \begin{itemize}[leftmargin=1.5em]
+      \item Thu phí theo khối lượng lệnh gọi API (\textit{Usage-based API Pricing}): 50 VNĐ / lần gọi suy luận mô phỏng phản thực; hoặc trích 15--20\% doanh thu từ các đối tác EdTech phân phối lại tính năng ClassTwin trên chợ ứng dụng LMS (Canvas App Store / Moodle Plugins).
+    \end{itemize}
+    \vspace{1mm}
+    \textbf{DÒNG DOANH THU 4: TƯ VẤN KIỂM TOÁN CHẤT LƯỢNG SƯ PHẠM DỰA TRÊN DỮ LIỆU}
+    \begin{itemize}[leftmargin=1.5em]
+      \item Cung cấp dịch vụ trích xuất báo cáo kiểm toán chất lượng giảng dạy định kỳ cho các trường đại học phục vụ công tác đánh giá ngoài, kiểm định chất lượng trong nước và quốc tế (ABET, AUN-QA).
+    \end{itemize}
+  \end{tcolorbox}
+  \caption{Cấu trúc 4 dòng doanh thu đa tầng của dự án ClassTwin}\label{fig:revenue-model}
+\end{figure}
+
+\subsection{Phân tích Kinh tế Đơn vị (Unit Economics) và Biên Lợi nhuận}\label{subsec:unit-economics}
+Điểm mạnh vượt trội của ClassTwin so với các giải pháp AI thị giác máy tính truyền thống nằm ở \textbf{biên lợi nhuận gộp cực kỳ cao} (Gross Margin $\ge 75\%$).
+\begin{itemize}
+  \item \textbf{Chi phí Hạ tầng Đám mây (Cloud Infrastructure Costs):} Do hệ thống tách biệt hoàn toàn giữa khâu huấn luyện chính sách Offline RL (chạy định kỳ theo tuần/tháng) và khâu suy luận trực tuyến (Inference sử dụng cơ chế đệm trạng thái Redis Snapshot), chi phí điện toán đám mây cho mỗi lớp học 80 sinh viên chỉ tốn khoảng $0.05 - 0.08\text{ USD}$ cho một buổi học 90 phút.
+  \item \textbf{Chi phí Phần cứng Biên (Edge Hardware Cost):} Một bộ thiết bị Gateway + Cảm biến IoT có chi phí linh kiện sản xuất hàng loạt vào khoảng $1.200.000\text{ VNĐ}$ (khoảng 48 USD), khấu hao trong 3 năm ($36\text{ tháng}$). Chi phí khấu hao hàng tháng chỉ là $33.000\text{ VNĐ}$/phòng học.
+  \item \textbf{Tỷ số Tài chính Mục tiêu:}
+  \begin{itemize}
+    \item \textbf{CAC (Chi phí thu hút một cơ sở giáo dục):} Dự kiến 25--35 triệu VNĐ qua kênh bán hàng B2B hội thảo chuyên đề.
+    \item \textbf{LTV (Giá trị vòng đời một trường đại học ký hợp đồng 3 năm):} Ước tính 350--600 triệu VNĐ.
+    \item \textbf{Tỷ số LTV / CAC:} Đạt từ $\mathbf{10\times}$ đến $\mathbf{15\times}$ (vượt xa chuẩn an toàn $3\times$ của ngành SaaS).
+    \item \textbf{Thời gian hoàn vốn (Payback Period):} Dưới 5 tháng sau khi ký kết hợp đồng triển khai.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Dự phóng Tài chính trong 3 Năm Đầu (3-Year Financial Projections)}\label{subsec:du-phong-tai-chinh}
+Bảng~\ref{tab:financial-projections} trình bày kế hoạch tăng trưởng tài chính từ giai đoạn nghiên cứu pilot đến giai đoạn mở rộng thương mại toàn quốc:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Bảng dự phóng tài chính của ClassTwin giai đoạn 2026--2029 (Đơn vị: Triệu VNĐ)}\label{tab:financial-projections}
+  \begin{tabularx}{\textwidth}{l X X X}
+    \toprule
+    \textbf{Chỉ số Tài chính} & \textbf{Năm 1 (2026-2027)} & \textbf{Năm 2 (2027-2028)} & \textbf{Năm 3 (2028-2029)} \\
+    \midrule
+    \textbf{Quy mô Triển khai} & 3 Trường Pilot (20 lớp) & 15 Trường ĐH / 30 Trung tâm & 60 Trường ĐH / 150 Trung tâm \\
+    Số lượng sinh viên phục vụ & 2.500 sinh viên & 35.000 sinh viên & 180.000 sinh viên \\
+    \midrule
+    Doanh thu Phần mềm SaaS & 150 & 2.100 & 10.800 \\
+    Doanh thu Thiết bị HaaS/IoT & 60 & 450 & 2.250 \\
+    Doanh thu API \& Dịch vụ Tư vấn & 40 & 350 & 1.950 \\
+    \textbf{TỔNG DOANH THU} & \textbf{250} & \textbf{2.900} & \textbf{15.000} \\
+    \midrule
+    Giá vốn Hàng bán (COGS - Cloud, HW) & 65 (26\%) & 580 (20\%) & 2.700 (18\%) \\
+    \textbf{LỢI NHUẬN GỘP (Gross Profit)} & \textbf{185 (74\%)} & \textbf{2.320 (80\%)} & \textbf{12.300 (82\%)} \\
+    \midrule
+    Chi phí R\&D và Đội ngũ Kỹ thuật & 200 & 950 & 3.200 \\
+    Chi phí Bán hàng \& Tiếp thị (S\&M) & 80 & 480 & 2.100 \\
+    Chi phí Quản lý Doanh nghiệp (G\&A) & 50 & 220 & 850 \\
+    \midrule
+    \textbf{LỢI NHUẬN TRƯỚC THUẾ (EBITDA)} & \textbf{-145 (Đầu tư)} & \textbf{+670 (Có lãi)} & \textbf{+6.150 (Tăng trưởng cao)} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Lộ trình Thâm nhập Thị trường (Go-To-Market - GTM)}\label{subsec:gtm-strategy}
+Chiến lược GTM được thiết kế bài bản qua 3 giai đoạn mang tính kế thừa (Hình~\ref{fig:gtm-roadmap}):
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tcolorbox}[colback=white, colframe=TealPrimary, boxrule=1pt, arc=3pt, width=0.98\textwidth]
+    \small
+    \textbf{GIAI ĐOẠN 1: NGHIÊN CỨU SCIC \& PILOT HỌC THUẬT (Tháng 10/2026 -- Tháng 06/2027)}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Mục tiêu:} Hoàn thiện thuật toán M1/M2; triển khai thí điểm M3 miễn phí tại 3 trường đại học đối tác của nhóm (quy mô 10--20 lớp học đại cương).
+      \item \textbf{Kết quả bàn giao:} Báo cáo nghiệm thu khoa học SCIC, bài báo hội thảo quốc tế AIED/EDM, đo lường các chỉ số chấp thuận của giảng viên và thu thập dữ liệu hiệu chuẩn simulator.
+    \end{itemize}
+    \vspace{1mm}
+    \textbf{GIAI ĐOẠN 2: THƯƠNG MẠI HÓA MVP \& KHÁCH HÀNG TIÊN PHONG (Tháng 07/2027 -- Tháng 06/2028)}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Mục tiêu:} Đóng gói sản phẩm thương mại ClassTwin v1.0 hoàn chỉnh; ký kết hợp đồng chính thức với 15 trường đại học và các chuỗi trung tâm luyện thi lớn.
+      \item \textbf{Chiến lược thâm nhập:} Áp dụng chính sách dùng thử miễn phí 1 học kỳ (\textit{Freemium 1 Semester}) cho các khoa nòng cốt; sau đó chuyển đổi sang hợp đồng trả phí toàn trường. Tổ chức chuỗi hội thảo chuyên đề ``Ứng dụng AI Hỗ trợ Quyết định trong Đổi mới Sư phạm Đại học''.
+    \end{itemize}
+    \vspace{1mm}
+    \textbf{GIAI ĐOẠN 3: MỞ RỘNG QUY MÔ \& TÍCH HỢP HỆ SINH THÁI (Tháng 07/2028 -- 2030)}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Mục tiêu:} Chiếm lĩnh 20\% thị phần trường đại học top đầu tại Việt Nam; phát hành SDK/API cho thị trường Đông Nam Á (Thái Lan, Indonesia, Malaysia).
+      \item \textbf{Huy động vốn:} Mở vòng gọi vốn Hạt giống (Seed Round) từ 500.000 đến 1.000.000 USD từ các quỹ đầu tư mạo hiểm chuyên về EdTech và AI (chẳng hạn Do Ventures, Genesia Ventures, Insignia).
+    \end{itemize}
+  \end{tcolorbox}
+  \caption{Lộ trình 3 giai đoạn thâm nhập thị trường của ClassTwin}\label{fig:gtm-roadmap}
+\end{figure}
+
+\subsection{Con hào Kinh tế và Lợi thế Cạnh tranh Bền vững (Moat)}\label{subsec:moat}
+ClassTwin sở hữu bốn ``con hào kinh tế'' khó lòng bị sao chép bởi các đối thủ khác trên thị trường:
+\begin{enumerate}
+  \item \textbf{Vòng xoay Dữ liệu Quyết định Giảng viên (Human Decision Flywheel):} Càng nhiều giảng viên tương tác, phê duyệt hoặc tinh chỉnh các gợi ý của hệ thống, ClassTwin càng tích lũy được tập dữ liệu chuyển dịch thực tế khổng lồ. Dữ liệu này được dùng để huấn luyện Offline RL ngày càng thông minh, bám sát văn hóa sư phạm bản địa mà không một mô hình ngôn ngữ lớn (LLM) thông thường nào làm được.
+  \item \textbf{Lợi thế Pháp lý và Đạo đức Tuyệt đối từ Privacy-by-Design:} Trong bối cảnh các quy định bảo vệ dữ liệu học đường ngày càng khắt khe, các giải pháp AI gắn camera quang học trong lớp học sẽ gặp rào cản pháp lý rất lớn. Triết lý phi-camera của ClassTwin giúp sản phẩm dễ dàng được ban giám hiệu và hội đồng đạo đức các trường thông qua trong vòng 1 tuần.
+  \item \textbf{Mô hình Simulator Đã được Hiệu chuẩn (Calibrated Counterfactual Engine):} Khoảng cách giữa dữ liệu bài tập số và phản ứng tâm lý học đường là rào cản công nghệ cực lớn. Thuật toán mô phỏng nhạy bén của ClassTwin đã được tinh chỉnh qua hàng triệu tương tác EdNet kết hợp dữ liệu thí điểm thực tế.
+  \item \textbf{Chi phí Chuyển đổi Cao (High Switching Costs):} Khi hệ thống ClassTwin đã tích hợp sâu vào quy trình phân tích học tập của nhà trường và được giảng viên tin cậy như một trợ lý quen thuộc, chi phí để nhà trường thay thế sang một giải pháp khác là rất lớn.
+\end{enumerate}
+
+\newpage
+
+% =========================================================================
+% PHẦN VI: KẾ HOẠCH TRIỂN KHAI, QUẢN TRỊ RỦI RO VÀ KẾT LUẬN
+% =========================================================================
+\section{Kế hoạch Triển khai Kỹ thuật và Quản trị Rủi ro}\label{sec:trien-khai-rui-ro}
+
+\subsection{Cấu trúc Kho mã nguồn (Repository Architecture)}\label{subsec:repo-structure}
+Mã nguồn phát triển hệ thống được tổ chức chuẩn hóa theo mô hình mô-đun hóa cao cấp, phục vụ cả mục tiêu nghiên cứu và đóng gói thư viện Python (\texttt{pip install classtwin}):
+
+\begin{tcolorbox}[colback=white, colframe=NavyBlue, boxrule=0.8pt, arc=3pt]
+\begin{verbatim}
+classtwin/
+├── configs/                  # File cấu hình YAML (preprocess, estimator, policy, env)
+├── docs/                     # Tài liệu thiết kế toán học, API specs & đề án LaTeX
+├── notebooks/                # Notebooks phân tích dữ liệu, profiling & visualization
+├── scripts/                  # CLI thực thi: preprocess.py, train_estimator.py, train_cql.py
+├── src/classtwin/
+│   ├── data/                 # Adapters, Schema validators, ZIP streaming reader
+│   ├── state_estimation/     # Mô hình BKT, GRU-DKT, Calibration, Probe Mastery
+│   ├── twin/                 # Learner Dynamics, Counterfactual Class Simulator
+│   ├── policies/             # Heuristic rules, Behavior Cloning, Discrete CQL
+│   ├── inference/            # FastAPI service, Redis snapshot cache, Safe Fallback
+│   └── utils/                # Metrics, Logging, Reproducibility seeds, Math helpers
+└── tests/                    # Kiểm thử tự động (Unit tests, Data leak checks, Parity)
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Ma trận Nhận diện và Quản trị Rủi ro (Risk Management Matrix)}\label{subsec:ma-tran-rui-ro}
+Bảng~\ref{tab:risk-matrix} phân tích các rủi ro cốt lõi và chiến lược phòng vệ tương ứng:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Ma trận quản trị rủi ro dự án ClassTwin}\label{tab:risk-matrix}
+  \begin{tabularx}{\textwidth}{p{3.2cm} p{2.2cm} p{4.2cm} X}
+    \toprule
+    \textbf{Rủi ro Nhận diện} & \textbf{Mức độ} & \textbf{Nguyên nhân Tiềm ẩn} & \textbf{Chiến lược Giảm thiểu (Mitigation)} \\
+    \midrule
+    \textbf{1. Giảng viên e ngại AI can thiệp (Teacher Resistance)} & Trung bình & Giảng viên lo sợ AI phán xét năng lực giảng dạy hoặc làm mất quyền chủ động trên lớp. & Định vị sản phẩm là ``Trợ lý tham mưu'', giảng viên nắm 100\% quyền quyết định. Tuyệt đối không xếp hạng thi đua giảng viên qua dữ liệu hệ thống. \\
+    \addlinespace
+    \textbf{2. Lệch pha giữa mô phỏng và thực tế (Reality Gap)} & Cao & Môi trường lớp học thực tế có quá nhiều biến số tâm lý không nằm trong EdNet. & Sử dụng Offline RL bảo thủ (CQL); luôn chạy phân tích độ nhạy $\phi$; tích hợp cơ chế Safe Fallback quay về phương án an toàn khi bất định cao. \\
+    \addlinespace
+    \textbf{3. Hạ tầng mạng trường học không ổn định} & Thấp & Mất kết nối Internet trong giờ học khiến ứng dụng bị treo. & Thiết kế Edge Gateway có khả năng đệm dữ liệu ngoại tuyến; bộ nhớ cache trạng thái lớp học tại biên; tự phục hồi khi có mạng trở lại. \\
+    \addlinespace
+    \textbf{4. Rủi ro pháp lý về dữ liệu học sinh} & Rất thấp & Các chính sách bảo mật thông tin cá nhân trong giáo dục. & Tuyệt đối không dùng camera/mic; ẩn danh hóa dữ liệu một chiều tại cổng kết nối; lưu trữ phân tán tuân thủ pháp luật. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Kết luận và Tầm nhìn Phát triển}\label{subsec:ket-luan}
+Đề án \textbf{ClassTwin (Classroom Digital Twin)} mang đến một góc nhìn hoàn toàn mới cho bài toán ứng dụng Trí tuệ Nhân tạo trong giáo dục: \textbf{Không thay thế người thầy, mà trao thêm cho người thầy một ``giác quan số'' sắc bén}. Bằng việc kết hợp hài hòa giữa cơ sở toán học chặt chẽ của Deep Knowledge Tracing, sức mạnh của Offline Reinforcement Learning và một triết lý thiết kế tôn trọng tuyệt đối quyền riêng tư và đạo đức nhà giáo, ClassTwin tự tin giải quyết trọn vẹn bài toán nâng cao chất lượng dạy và học trong môi trường đại học hiện đại.
+
+Với mô hình kinh doanh B2B SaaS bền vững, biên lợi nhuận gộp vượt trội ($\ge 75\%$) và lộ trình thâm nhập thị trường bài bản, ClassTwin không chỉ là một đề án nghiên cứu khoa học xuất sắc tham dự \textbf{SCIC 2026}, mà còn là một hạt giống công nghệ EdTech đầy triển vọng, sẵn sàng bứt phá thành một sản phẩm quốc gia có tầm ảnh hưởng xã hội và giá trị kinh tế to lớn.
+
+\newpage
+
+% =========================================================================
+% TÀI LIỆU THAM KHẢO
+% =========================================================================
+\section{Tài liệu Tham khảo}\label{sec:tai-lieu-tham-khao}
+
+\begin{enumerate}[label={[\arabic*]}]
+  \item \textbf{Đề án Nghiên cứu Gốc ClassTwin} (2026). \textit{Classroom Digital Twin: Tối ưu hóa chính sách giảng dạy bằng Offline Reinforcement Learning}. Hồ sơ đề án nghiên cứu khoa học SCIC 2026.
+  \item \textbf{Choi, Y., Lee, Y., Cho, J., Baek, J., Kim, B., Cha, Y., ... \& Heo, J.} (2020). \textit{EdNet: A large-scale hierarchical dataset in education}. In International Conference on Artificial Intelligence in Education (AIED), pp. 69--73. \url{https://arxiv.org/abs/1912.03072}
+  \item \textbf{Piech, C., Bassen, J., Huang, J., Ganguli, S., Sahami, M., Guibas, L. J., \& Sohl-Dickstein, J.} (2015). \textit{Deep knowledge tracing}. In Advances in Neural Information Processing Systems (NeurIPS), pp. 505--513. \url{https://arxiv.org/abs/1506.05908}
+  \item \textbf{Kumar, A., Zhou, A., Tucker, G., \& Levine, S.} (2020). \textit{Conservative Q-learning for offline reinforcement learning}. In Advances in Neural Information Processing Systems (NeurIPS), 33, pp. 1179--1191. \url{https://arxiv.org/abs/2006.04779}
+  \item \textbf{Hao, B., Xiang, J., Cheng, M., \& Zhang, Z.} (2021). \textit{Bootstrapping fitted Q-evaluation for off-policy inference}. In International Conference on Machine Learning (ICML), pp. 4074--4084.
+  \item \textbf{Corbett, A. T., \& Anderson, J. R.} (1994). \textit{Knowledge tracing: Modeling the acquisition of procedural knowledge}. User Modeling and User-Adapted Interaction, 4(4), pp. 253--278.
+  \item \textbf{Sutton, R. S., \& Barto, A. G.} (2018). \textit{Reinforcement Learning: An Introduction}. MIT Press, Cambridge, MA.
+  \item \textbf{UNESCO} (2021). \textit{AI and education: Guidance for policy-makers}. United Nations Educational, Scientific and Cultural Organization.
+\end{enumerate}
+
+\end{document}
