@@ -7,6 +7,11 @@ import torch
 
 def get_logger(name: str = "classtwin", level: int = logging.INFO) -> logging.Logger:
     """Returns a standardized structured logger for ClassTwin."""
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
     logger = logging.getLogger(name)
     if not logger.handlers:
         logger.setLevel(level)

@@ -14,7 +14,7 @@ policy:
 twin:
   default_cohort_size: 60
   episode_duration_minutes: 60
-  mc_rollout_samples: 15
+  mc_rollout_samples: 30
   scenarios:
     - "neutral"
     - "high_engagement"

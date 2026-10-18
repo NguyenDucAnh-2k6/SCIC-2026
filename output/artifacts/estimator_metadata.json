@@ -1,0 +1,10 @@
+{
+  "model_type": "GRU-DKT",
+  "d_model": 64,
+  "d_hidden": 128,
+  "num_questions": 11388,
+  "epochs": 1,
+  "ece": 0.08153262985102878,
+  "brier_score": 0.24518744867992556,
+  "checkpoint_sha256": "42a9c8c23797e539ed23ac9c6dbc7517713cce168f243c8141bef9e5e84ff9d8"
+}

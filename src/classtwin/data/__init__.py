@@ -11,7 +11,7 @@ from .zip_reader import StreamingZipReader
 from .adapters import adapt_kt1_row, adapt_question_row, extract_user_id_from_path
 from .preprocessing import assign_student_split, ShardWriter
 from .features import compute_as_of_features
-from .sequences import SequenceDataset, create_sequence_dataloader
+from .sequences import FastSequenceDataset, SequenceDataset, create_sequence_dataloader, load_sequences_from_shards, deterministic_irt_label
 
 __all__ = [
     "ProvenanceEnum",
@@ -28,6 +28,9 @@ __all__ = [
     "assign_student_split",
     "ShardWriter",
     "compute_as_of_features",
+    "FastSequenceDataset",
     "SequenceDataset",
-    "create_sequence_dataloader"
+    "create_sequence_dataloader",
+    "load_sequences_from_shards",
+    "deterministic_irt_label"
 ]
