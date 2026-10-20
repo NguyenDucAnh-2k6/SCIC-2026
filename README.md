@@ -162,70 +162,6 @@ python scripts/evaluate_models.py
 ```
 > **Chỉ số Sức khỏe Sư phạm (Shannon Action Entropy):** Đo độ đa dạng hoạt động $H(\pi) = -\sum_a P(a) \log_2 P(a)$ trên môi trường Digital Twin. Tự động gắn cờ cảnh báo `⚠️ YES (Hacked)` nếu chính sách bị co cụm vào 1--2 lựa chọn hoặc entropy $< 0.40$. Xuất báo cáo JSON tại `output/artifacts/evaluation_report.json`.
 
-## 🚀 Hướng dẫn Chạy Chi tiết trên Kaggle (GPU Miễn phí)
-
-Kaggle cung cấp GPU T4 x2 hoặc P100 với 30 giờ tính toán miễn phí/tuần. Dưới đây là hướng dẫn từ A-Z:
-
-### Bước 1: Upload Dữ liệu EdNet lên Kaggle
-1. Truy cập [Kaggle Datasets](https://www.kaggle.com/datasets) và nhấn nút **New Dataset**.
-2. Đặt tiêu đề Dataset là: `ednet-kt1`.
-3. Kéo thả file `EdNet-KT1.zip` vào ô tải lên và nhấn **Create**.
-4. Sau khi tải xong, đường dẫn dữ liệu trên Kaggle sẽ là:
-   ```
-   /kaggle/input/ednet-kt1/EdNet-KT1.zip
-   ```
-
-### Bước 2: Tạo Kaggle Notebook & Bật GPU
-1. Nhấn nút **New Notebook** trên Kaggle.
-2. Tại cột menu bên phải (**Notebook options**):
-   * **Accelerator:** Chọn `GPU T4 x2` hoặc `GPU P100`.
-   * **Internet:** Chọn `Always On` (để clone git và tải thư viện).
-3. Nhấn **+ Add Data** ở góc phải và chọn dataset `ednet-kt1` vừa tạo ở Bước 1.
-
-### Bước 3: Clone Mã nguồn và Kiểm tra
-Trong ô code đầu tiên của Notebook, chạy:
-```bash
-# 1. Clone mã nguồn dự án vào thư mục làm việc /kaggle/working/classtwin
-!git clone https://github.com/NguyenDucAnh-2k6/SCIC-2026.git /kaggle/working/classtwin
-%cd /kaggle/working/classtwin
-
-# 2. Chạy bộ kiểm thử tự động xác minh môi trường (13 unit tests)
-!python -c "
-import sys, importlib.util
-from pathlib import Path
-sys.path.insert(0, '/kaggle/working/classtwin')
-sys.path.insert(0, '/kaggle/working/classtwin/src')
-for tf in ['tests/test_schemas.py', 'tests/test_state_estimation.py', 'tests/test_twin.py', 'tests/test_cql.py', 'tests/test_inference.py']:
-    spec = importlib.util.spec_from_file_location(Path(tf).stem, tf)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    for a in dir(mod):
-        if a.startswith('test_'): getattr(mod, a)()
-print('All 13 unit tests passed successfully on Kaggle!')
-"
-```
-
-### Bước 4: Chạy Luồng Pipeline Hợp nhất trên Kaggle
-Chạy toàn bộ chu trình tiền xử lý, huấn luyện Estimator và huấn luyện CQL bằng 1 lệnh duy nhất:
-```bash
-!python scripts/pipeline.py \
-    --config configs/kaggle_pipeline.yaml \
-    --output-dir /kaggle/working/output \
-    --estimator-epochs 15 \
-    --policy-episodes 40 \
-    --policy-steps 150
-```
-
-> **Ghi chú về cơ chế Resume:** Nếu phiên làm việc Kaggle bị ngắt, bạn chỉ cần chạy lại lệnh trên. File `processed_ledger.json` sẽ tự động bỏ qua các file đã xử lý và tiếp tục từ vị trí dừng.
-
-### Bước 5: Kiểm tra và Tải về Checkpoint
-Tất cả checkpoint và tài liệu phát hành sẽ được lưu tại `/kaggle/working/output`:
-```bash
-!ls -lh /kaggle/working/output/models
-!cat /kaggle/working/output/release_manifest.json
-```
-Bạn có thể tải trực tiếp file `release_manifest.json`, `gru_dkt.pt` và `cql_policy.pt` từ mục **Data > Output** ở cột bên phải giao diện Kaggle.
-
 ---
 
 ## 💻 Cấu trúc Dự án & Chạy Cục bộ (Local Environment)
@@ -292,4 +228,4 @@ Truy cập bảng điều khiển Digital Twin tại: [http://localhost:5173](ht
 
 ## 📜 Giấy phép (License)
 
-Dự án được phân phối dưới giấy phép [MIT License](file:///d:/SCIC%202026/SCIC-2026/LICENSE). Bản quyền thuộc về **Nguyen Duc Anh & Nhóm Nghiên cứu ClassTwin (SCIC 2026)**.
+Dự án được phân phối dưới giấy phép [MIT License](file:///d:/SCIC%202026/SCIC-2026/LICENSE).
