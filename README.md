@@ -36,43 +36,89 @@
 
 ---
 
-## ⚙️ Hướng dẫn Điều chỉnh Tham số (Chỉnh ở đâu?)
+## ⚙️ Cấu hình Hợp nhất & Tham số Điều khiển ([`configs/pipeline.yaml`](file:///d:/SCIC%202026/SCIC-2026/configs/pipeline.yaml))
 
-Mọi tham số của dự án đều được tách biệt hoàn toàn trong thư mục [`configs/`](file:///d:/SCIC%202026/SCIC-2026/configs/) dưới dạng file YAML rõ ràng, không hardcode trong mã nguồn:
+Toàn bộ tham số của cả 3 giai đoạn (Tiền xử lý $\to$ Estimator GRU-DKT $\to$ Policy Discrete-CQL & Digital Twin Đa nguồn) được tập trung tại file **[`configs/pipeline.yaml`](file:///d:/SCIC%202026/SCIC-2026/configs/pipeline.yaml)**:
 
-### 1. Tham số Dữ liệu & Tiền xử lý ([`configs/preprocess.yaml`](file:///d:/SCIC%202026/SCIC-2026/configs/preprocess.yaml))
-* `raw_zip_path`: Đường dẫn tới file `EdNet-KT1.zip`.
-* `shards_dir`: Thư mục lưu trữ các file Parquet phân mảnh (`train/`, `val/`, `test/`).
+### 1. Tham số Dữ liệu & Tiền xử lý (`data:`)
+* `raw_zip_path`: Đường dẫn tới file zip thô (`data/EdNet-KT1.zip`).
+* `shards_dir`: Thư mục lưu trữ các file Parquet phân mảnh (`data/shards/train/`, `val/`, `test/`).
 * `chunk_size_rows`: Kích thước mỗi shard Parquet (mặc định: `50,000` dòng/shard).
-* `train_ratio`, `val_ratio`, `test_ratio`: Tỷ lệ chia tập theo Protocol A (mặc định: `0.8 / 0.1 / 0.1` theo hash `student_id`).
-* `seed`: Seed ngẫu nhiên cố định để tái lập kết quả phân chia.
+* `train_ratio`, `val_ratio`, `test_ratio`: Tỷ lệ chia tập (`0.8 / 0.1 / 0.1` theo hash `student_id`).
 
-### 2. Tham số Mô hình Ước lượng Trạng thái ([`configs/estimator.yaml`](file:///d:/SCIC%202026/SCIC-2026/configs/estimator.yaml))
+### 2. Tham số Mô hình Ước lượng Trạng thái (`estimator:`)
+* `model_type`: Loại mô hình Knowledge Tracing (`gru_dkt`).
 * `d_model`: Kích thước vector nhúng câu hỏi (mặc định: `64`).
 * `d_hidden`: Kích thước vector ẩn của mạng GRU (mặc định: `128`).
-* `dropout`: Tỷ lệ dropout chống quá khớp (mặc định: `0.1`).
-* `learning_rate`: Tốc độ học tối ưu hóa AdamW (mặc định: `0.001`).
-* `batch_size`: Số lượng chuỗi trong mỗi mini-batch (mặc định: `64`).
-* `max_epochs`: Số epoch huấn luyện tối đa (mặc định: `20`).
-* `probe_sample_size`: Số lượng câu hỏi kiểm định cố định theo kỹ năng để tính Probe Mastery.
+* `batch_size`: Số lượng chuỗi trong mini-batch (mặc định: `128`).
+* `max_epochs`: Số epoch huấn luyện tối đa (mặc định: `5`).
+* `probe_sample_size`: Số câu hỏi kiểm định cố định theo kỹ năng để đo Probe Mastery.
 
-### 3. Tham số Chính sách Offline RL & Digital Twin ([`configs/policy_sim.yaml`](file:///d:/SCIC%202026/SCIC-2026/configs/policy_sim.yaml))
-* `d_state`: Chiều của vector trạng thái lớp học $\mathbf{x}_t$ (chuẩn: `12`).
+### 3. Tham số Chính sách Offline RL (`policy:`)
+* `policy_type`: Thuật toán Offline RL (`cql` - Discrete Conservative Q-Learning).
+* `d_state`: Chiều vector trạng thái lớp học $\mathbf{x}_t$ (**12 chiều chuẩn hóa**).
 * `cql_alpha`: Hệ số phạt bảo thủ CQL dìm giá trị Q ngoài phân phối (mặc định: `1.0`).
-* `gamma_base`: Hệ số chiết khấu cơ sở (mặc định: `0.99`).
-* `tau_seconds`: Hằng số thời gian chuẩn hóa bước chuyển Bán Markov (mặc định: `60.0` giây).
-* `workload_budget`: Ngân sách công sức tối đa cho phép của giảng viên trong 1 tiết (mặc định: `15.0`).
-* `default_cohort_size`: Sĩ số lớp học mô phỏng (mặc định: `60` sinh viên).
-* `mc_rollout_samples`: Số mẫu Monte-Carlo khi chạy kịch bản phản thực What-if (mặc định: `20`).
+* `gamma_base`: Hệ số chiết khấu cơ sở (`0.99`).
+* `tau_seconds`: Hằng số thời gian chuẩn hóa bước chuyển Bán Markov (`60.0` giây).
+* `workload_budget`: Trần công sức tối đa của giảng viên trong tiết học (`15.0`).
 
-### 4. Ghi đè nhanh qua Command Line (CLI Overrides)
-Bạn có thể ghi đè tham số trực tiếp qua dòng lệnh mà không cần sửa file YAML:
-```bash
-# Thay đổi số epoch của estimator và số session của policy:
-python scripts/pipeline.py --estimator-epochs 15 --policy-episodes 50 --policy-steps 200
-```
+### 4. Tham số Môi trường Bản sao số Lớp học Đa nguồn (`twin:`)
+* `use_real_data`: Kích hoạt nạp dữ liệu thực địa đa nguồn (`true` / `false`).
+* `class_id`: ID lớp học thực tế trích xuất từ ASSISTments (mặc định: `12262` gồm 53 học sinh).
+* `default_cohort_size`: Sĩ số lớp học mô phỏng (mặc định: `53`).
+* `episode_duration_minutes`: Thời lượng tiết học (chuẩn: `60` phút).
+* `mc_rollout_samples`: Số mẫu Monte-Carlo khi chạy kịch bản phản thực What-if (`30`).
 
 ---
+
+## ⚡ 1 Entrypoint Duy nhất Cho Toàn bộ Chu trình: `scripts/pipeline.py`
+
+Hệ thống cung cấp một điểm thực thi duy nhất **[`scripts/pipeline.py`](file:///d:/SCIC%202026/SCIC-2026/scripts/pipeline.py)** tự động điều phối khép kín luồng làm việc 4 tầng:
+```
+[Tiền xử lý Zip -> Parquet] -> [Huấn luyện GRU-DKT] -> [Xây dựng Env Đa nguồn] -> [Huấn luyện CQL Policy] -> [Release Manifest]
+```
+
+### 1. Chạy Toàn bộ Pipeline Mặc định (Full Pipeline Run)
+```bash
+python scripts/pipeline.py
+```
+> **Cơ chế Tự động Nhận diện (Smart Auto-detection):** Nếu hệ thống phát hiện thư mục `data/shards/` đã có sẵn các file Parquet, script sẽ **tự động bỏ qua Stage 1 (Tiền xử lý)** và chuyển ngay sang huấn luyện GRU-DKT và CQL để tiết kiệm thời gian!
+
+### 2. Chạy Nhanh để Kiểm thử trên CPU (Fast Smoke Run)
+Chạy thử 2 shard dữ liệu, 50 sinh viên, 1 epoch DKT, 5 episode mô phỏng trong vòng 10 giây:
+```bash
+python scripts/pipeline.py --num-shards 2 --max-students 50 --estimator-epochs 1 --policy-episodes 5 --policy-steps 10
+```
+
+### 3. Huấn luyện Quy mô Lớn trên GPU (Production Run)
+Huấn luyện trên toàn bộ shards Parquet và 100 phiên mô phỏng lớp học:
+```bash
+python scripts/pipeline.py --num-shards -1 --estimator-epochs 10 --policy-episodes 100 --policy-steps 500
+```
+
+### 4. Tùy chọn Bỏ qua hoặc Ép chạy từng Giai đoạn
+* `--force-preprocess`: Ép nén lại toàn bộ Parquet shards từ file ZIP.
+* `--skip-preprocess`: Bỏ qua tiền xử lý dữ liệu.
+* `--skip-estimator`: Bỏ qua huấn luyện GRU-DKT (sử dụng checkpoint có sẵn).
+* `--skip-policy`: Bỏ qua huấn luyện chính sách CQL.
+* `--use-synthetic-twin`: Chuyển sang mô phỏng thuần tham số Beta thay vì dữ liệu đa nguồn thật.
+
+### 5. Huấn luyện Lại Riêng Chính sách CQL & Inverse RL
+Khi bạn đã có sẵn checkpoint GRU-DKT và chỉ muốn tinh chỉnh hoặc huấn luyện lại chính sách sư phạm an toàn:
+```bash
+# Huấn luyện CQL với hàm thưởng hiển thị cải tiến
+python scripts/train_policy.py --reward-mode explicit --episodes 40 --train-steps 150
+
+# Huấn luyện Inverse RL (MaxEnt IRL) với bộ sinh chuyên gia ngẫu nhiên mềm
+python scripts/train_policy.py --reward-mode irl --episodes 40 --train-steps 150
+```
+
+### 6. Đánh giá Độc lập & Kiểm tra Reward Hacking (Pre-Deployment Benchmark)
+Đo lường toàn diện chất lượng mô hình ước lượng (Calibration, Uncertainty, Dynamic Range) và chẩn đoán hiện tượng Mode Collapse / Reward Hacking của các chính sách:
+```bash
+python scripts/evaluate_models.py
+```
+> **Chỉ số Sức khỏe Sư phạm (Shannon Action Entropy):** Đo độ đa dạng hoạt động $H(\pi) = -\sum_a P(a) \log_2 P(a)$ trên môi trường Digital Twin. Tự động gắn cờ cảnh báo `⚠️ YES (Hacked)` nếu chính sách bị co cụm vào 1--2 lựa chọn hoặc entropy $< 0.40$. Xuất báo cáo JSON tại `output/artifacts/evaluation_report.json`.
 
 ## 🚀 Hướng dẫn Chạy Chi tiết trên Kaggle (GPU Miễn phí)
 

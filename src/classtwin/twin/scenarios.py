@@ -40,8 +40,8 @@ def counterfactual_twin_rollout(
 
     for scenario_phi in scenarios:
         for _ in range(num_mc_samples):
-            # Deepcopy base environment state for isolated counterfactual rollout
-            env_sim = copy.deepcopy(base_env)
+            # Fast isolated counterfactual rollout without deepcopying PyTorch models
+            env_sim = base_env.clone() if hasattr(base_env, "clone") else copy.deepcopy(base_env)
             _, reward, _, info = env_sim.step(
                 action=candidate_action,
                 duration_minutes=duration_minutes,

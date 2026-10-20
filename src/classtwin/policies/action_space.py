@@ -21,36 +21,18 @@ ACTION_WORKLOAD_COST = {
     "quiz": 1.8,
     "groupwork": 2.0,
     "discussion": 1.5,
-    "break": 0.2
+    "break": -1.5  # Break relieves teacher cognitive fatigue
 }
 
 def get_valid_action_mask(
-    time_remaining_minutes: float,
-    current_cumulative_workload: float = 0.0,
-    workload_budget: float = 15.0
+    time_remaining_minutes: float = 180.0,
+    current_cumulative_workload: float = 0.0
 ) -> List[int]:
     """
-    Returns boolean mask (1 for valid action, 0 for masked)
-    preventing actions that exceed remaining session time or teacher workload budget.
+    Returns boolean action mask for discrete Q-learning.
+    While session is active (time_remaining_minutes > 0), all pedagogical actions
+    are valid for neural Q-network evaluation without arbitrary masking.
     """
-    mask = []
-    for action in PEDAGOGICAL_ACTIONS:
-        duration = DEFAULT_DURATIONS_MINUTES[action]
-        cost = ACTION_WORKLOAD_COST[action]
-
-        is_valid = True
-        # Cannot exceed remaining class time
-        if duration > time_remaining_minutes:
-            is_valid = False
-        # Cannot violate total teacher cognitive workload budget
-        if (current_cumulative_workload + cost) > workload_budget:
-            # allow only 'lecture' or 'break' as low-cost fallbacks
-            if action not in ["lecture", "break"]:
-                is_valid = False
-
-        mask.append(1 if is_valid else 0)
-
-    # Always ensure at least one action is valid
-    if sum(mask) == 0:
-        mask[0] = 1  # fallback to 'lecture'
-    return mask
+    if time_remaining_minutes <= 0.0:
+        return [0, 0, 0, 0, 0]
+    return [1, 1, 1, 1, 1]

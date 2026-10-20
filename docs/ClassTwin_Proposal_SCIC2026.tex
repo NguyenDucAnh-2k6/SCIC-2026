@@ -339,17 +339,19 @@ Vì mỗi hoạt động sư phạm $a_t$ kéo dài một khoảng thời gian t
 \end{equation}
 Quy tắc này bảo đảm tính nhất quán toán học khi tích lũy phần thưởng trong các bước chuyển có thời lượng không đồng nhất.
 
-\subsection{Hàm Phần thưởng Đa Mục tiêu và Ràng buộc Nghiêm ngặt}\label{subsec:reward-constraints}
-Chính sách giảng dạy phải dung hòa giữa việc nâng cao năng lực học tập, bảo vệ nhóm học sinh yếu, đồng thời kiểm soát khối lượng công việc của giảng viên để không gây kiệt sức (\textit{burnout}). Hàm phần thưởng tức thời $r_t$ được cấu thành bởi 4 thành phần:
+\subsection{Hàm Phần thưởng Đa Mục tiêu Cân bằng và Chống Reward Hacking}\label{subsec:reward-constraints}
+Chính sách giảng dạy phải dung hòa giữa việc nâng cao năng lực học tập, bảo vệ nhóm học sinh yếu, đồng thời kiểm soát khối lượng công việc của giảng viên để không gây kiệt sức (\textit{burnout}) và phòng ngừa hiện tượng sụp đổ chính sách (\textit{policy mode collapse / reward hacking}). Hàm phần thưởng tức thời $r_t$ được cấu thành bởi các thành phần cân bằng:
 \begin{equation}\label{eq:reward-function}
-  r_t = w_m \cdot \Delta \bar{M}_t + w_l \cdot \Delta M_{low, t} - w_c \cdot \text{Workload}(a_t) - w_s \cdot \mathbb{I}(a_t \ne a_{t-1})
+  r_t = w_m \cdot \Delta \bar{M}_t + w_l \cdot \Delta M_{low, t} - w_c \cdot \text{Workload}(a_t) - w_s \cdot \mathbb{I}(a_t \ne a_{t-1}) - \mathcal{P}_{mono}(a_t, k_{rep}) - \mathcal{P}_{env}(\mathbf{e}_t) + \mathcal{R}_{ped}(a_t, \mathbf{x}_t)
 \end{equation}
 trong đó:
 \begin{itemize}
   \item $\Delta \bar{M}_t = \bar{m}_{t+1} - \bar{m}_t$ là mức tăng trưởng độ hiểu bài trung bình của toàn lớp.
   \item $\Delta M_{low, t} = \mathbf{q}_{0.25}(m_{t+1}) - \mathbf{q}_{0.25}(m_t)$ là mức cải thiện của nhóm 25\% sinh viên yếu nhất.
-  \item $\text{Workload}(a_t)$ là chi phí nhận thức/công sức của giảng viên khi chủ trì hoạt động (ví dụ: Chấm bài/điều phối thảo luận có chi phí cao hơn bài giảng truyền thống).
-  \item $\mathbb{I}(a_t \ne a_{t-1})$ là hình phạt chống đổi hoạt động quá dồn dập gây mất tập trung.
+  \item $\text{Workload}(a_t)$ là chi phí nhận thức/công sức của giảng viên (được chuẩn hóa cân bằng để hoạt động giải lao không bị khai thác làm nguồn tích lũy điểm phi lý).
+  \item $\mathcal{P}_{mono}(a_t, k_{rep}) = \lambda_{mono} \cdot \max(0, k_{rep} - 1)$ là \textbf{Hình phạt Đơn điệu Sư phạm (Pedagogical Monotony Penalty)}, phạt tăng tiến khi tác tử lặp lại cùng một hành động liên tiếp $k_{rep} \ge 2$ lần (đặc biệt phạt nặng nếu lặp lại giải lao liên tiếp gây lãng phí quỹ thời gian tiết học).
+  \item $\mathcal{P}_{env}(\mathbf{e}_t) = \lambda_f \max(0, \bar{f}_t - 0.40)^2 + \lambda_{co2} \max(0, \frac{\text{CO}_2 - 1000}{400})$ là hình phạt quá tải sinh lý học sinh và suy giảm chất lượng không khí.
+  \item $\mathcal{R}_{ped}(a_t, \mathbf{x}_t)$ là điểm thưởng sư phạm theo ngữ cảnh: thưởng xây dựng nền tảng bài giảng khi năng lực lớp còn thấp ($\bar{m} < 0.55$), thưởng kiểm tra củng cố (\textit{Formative Assessment / Retrieval Practice}) khi đan xen quiz sau thuyết trình/thảo luận, và thưởng phục hồi nhận thức khi cho nghỉ đúng thời điểm.
 \end{itemize}
 
 \subsubsection{Bài toán Tối ưu Chính sách có Ràng buộc (Constrained Policy Optimization)}
@@ -364,8 +366,8 @@ Mục tiêu là tìm kiếm chính sách $\pi^*(a \mid \mathbf{x})$ tối đa h�
   \text{và:} \quad \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \max\big(0, -\Delta M_{low, t}\big) \right] \le \epsilon_{harm} \quad \text{(Bảo vệ sinh viên yếu)}
 \end{equation}
 
-\subsection{Thuật toán Offline RL: Conservative Q-Learning (CQL)}\label{subsec:cql}
-Để huấn luyện tác tử sư phạm từ dữ liệu tương tác lịch sử $\mathcal{D}$ mà không gặp phải hiện tượng thổi phồng giá trị ngoại phân phối (\textit{out-of-distribution value overestimation}), ClassTwin áp dụng thuật toán \textbf{Discrete Conservative Q-Learning (CQL)} kết hợp mặt nạ hành vi hợp lệ $\mathcal{A}_{valid}(\mathbf{x}_t)$:
+\subsection{Thuật toán Offline RL: Conservative Q-Learning (CQL) kết hợp Entropy Regularization}\label{subsec:cql}
+Để huấn luyện tác tử sư phạm từ dữ liệu tương tác lịch sử $\mathcal{D}$ mà không gặp phải hiện tượng thổi phồng giá trị ngoại phân phối (\textit{out-of-distribution value overestimation}) hay co cụm hành vi (\textit{mode collapse}), ClassTwin áp dụng thuật toán \textbf{Discrete Conservative Q-Learning (CQL)} kết hợp mặt nạ hành vi hợp lệ $\mathcal{A}_{valid}(\mathbf{x}_t)$ và phân phối hành động Boltzmann Softmax:
 
 \begin{equation}\label{eq:td-target}
   y_{TD} = r_t + \gamma(\Delta t) \cdot (1 - d_t) \cdot \max_{a' \in \mathcal{A}_{valid}(\mathbf{x}_{t+1})} Q_{\bar{\theta}}(\mathbf{x}_{t+1}, a')
@@ -374,7 +376,22 @@ Hàm mục tiêu tối thiểu hóa tổn thất của hàm Q-network với tr�
 \begin{equation}\label{eq:cql-loss}
   \mathcal{L}_{CQL}(\theta) = \frac{1}{2} \mathbb{E}_{(\mathbf{x}, a, r, \mathbf{x}') \sim \mathcal{D}} \left[ \big(Q_\theta(\mathbf{x}, a) - y_{TD}\big)^2 \right] + \alpha \cdot \mathbb{E}_{\mathbf{x} \sim \mathcal{D}} \left[ \ln \sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\big(Q_\theta(\mathbf{x}, a')\big) - Q_\theta(\mathbf{x}, a_\mathcal{D}) \right]
 \end{equation}
-Số hạng điều chuẩn $\alpha$ có tác dụng dìm thấp giá trị Q của những hành động chưa từng được thử nghiệm trong dữ liệu lịch sử, buộc chính sách luôn đưa ra các quyết định nằm trong vùng an toàn đã được kiểm chứng.
+Khi suy luận trực tuyến, nhằm triệt tiêu hiện tượng argmax tham lam co cụm vào 1--2 lựa chọn, chính sách triển khai phân phối xác suất Boltzmann Softmax có hiệu chỉnh lặp:
+\begin{equation}\label{eq:boltzmann-policy}
+  \pi_\theta(a \mid \mathbf{x}) = \frac{\exp\Big(\big[Q_\theta(\mathbf{x}, a) - \lambda_{rep} \cdot \mathbb{I}(a == a_{last})\big] \,/\, \tau\Big)}{\sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\Big(\big[Q_\theta(\mathbf{x}, a') - \lambda_{rep} \cdot \mathbb{I}(a' == a_{last})\big] \,/\, \tau\Big)}
+\end{equation}
+với nhiệt độ $\tau = 0.35$ và hệ số phạt lặp $\lambda_{rep} = 0.60$, bảo đảm độ đa dạng Entropy sư phạm $H(\pi) = -\sum_a \pi(a)\log_2 \pi(a) \ge 0.70$ (đạt $0.94$ trên thực nghiệm benchmark), dung hòa toàn diện cả 5 hoạt động sư phạm.
+
+\subsection{Học Tăng cường Nghịch đảo (Inverse RL) với Mẫu Chuyên gia Ngẫu nhiên Mềm}\label{subsec:irl-theory}
+Bên cạnh hàm thưởng hiển thị, ClassTwin tích hợp nhánh \textbf{Maximum Entropy Inverse Reinforcement Learning (MaxEnt-IRL)} để khôi phục hàm thưởng ẩn $R_\psi(\mathbf{x}, a)$ từ các quỹ đạo chuyên gia sư phạm. Thay vì sử dụng các luật if-else cứng nhắc dễ gây thiên lệch mẫu, ClassTwin thiết lập bộ sinh quỹ đạo chuyên gia ngẫu nhiên mềm (\textit{Stochastic Expert Demonstrator}):
+\begin{equation}\label{eq:irl-expert-utility}
+  P_{exp}(a \mid \mathbf{x}) = \text{Softmax}\big(\mathbf{U}_{ped}(\mathbf{x}) \,/\, \tau_{exp}\big)
+\end{equation}
+trong đó $\mathbf{U}_{ped}$ là vector tiện ích sư phạm đa chiều (độ lệch phân vị $\mathbf{q}_{75} - \mathbf{q}_{25}$ kích hoạt học nhóm, mệt mỏi kích hoạt giải lao, giảng bài mới kích hoạt bài giảng, v.v.). Hàm thưởng ẩn $R_\psi$ được tối ưu hóa qua hàm mục tiêu đối ngẫu MaxEnt:
+\begin{equation}\label{eq:maxent-loss}
+  \mathcal{L}_{IRL}(\psi) = -\mathbb{E}_{(s, a) \sim \mathcal{D}_{exp}} [R_\psi(s, a)] + \ln \sum_{s', a'} \exp\big(R_\psi(s', a')\big) + \beta_{reg} \|R_\psi\|_2^2
+\end{equation}
+giúp hệ thống hiểu được các giá trị ngầm định của giảng viên chuyên gia mà không bị thiên lệch vào bất kỳ hoạt động đơn lẻ nào.
 
 \newpage
 
@@ -479,7 +496,7 @@ Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tư�
 \begin{algorithm}[H]
 \caption{Vòng lặp Suy luận Trực tuyến \& Hỗ trợ Quyết định Giảng viên}\label{algo:online-inference}
 \begin{algorithmic}[1]
-\Require Định danh lớp học $\text{class\_id}$; Dòng sự kiện thời gian thực $\mathcal{E}_{stream}$; Thời gian còn lại $T_{remain}$; Ngưỡng dữ liệu hợp lệ $\Lambda_{cov} = 0.65$; Ngưỡng bất định tối đa $\Sigma_{max} = 0.40$.
+\Require Định danh lớp học $\text{class\_id}$; Dòng sự kiện thời gian thực $\mathcal{E}_{stream}$; Thời lượng buổi học $T_{max} \in \{45', 90', 180'\}$; Thời gian còn lại $T_{remain}$; Ngưỡng dữ liệu hợp lệ $\Lambda_{cov} = 0.65$; Ngưỡng bất định tối đa $\Sigma_{max} = 0.40$.
 \Ensure Gợi ý sư phạm khả thi $a^*$; Báo cáo giải thích minh bạch $\mathcal{X}_{reason}$.
 \State Thu thập và làm sạch các sự kiện trong cửa sổ trễ $\Delta W$: $\mathbf{E} \leftarrow \text{IngestAndVerify}(\mathcal{E}_{stream})$
 \State Cập nhật trạng thái ẩn từng sinh viên: $\forall i, \mathbf{h}_{i, t} \leftarrow \text{UpdateState}(\mathbf{h}_{i, t-1}, \mathbf{E}_i)$
@@ -491,7 +508,7 @@ Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tư�
 \State \textbf{end if}
 \State Tổng hợp vector trạng thái lớp học $\mathbf{x}_t$ theo công thức~\eqref{eq:class-state}
 \State Lọc danh sách hành động khả thi: $\mathcal{A}_{cand} \leftarrow \text{MaskActions}(\mathbf{x}_t, T_{remain})$
-\State Chọn hành động tối ưu theo chính sách CQL: $a^* \leftarrow \arg\max_{a \in \mathcal{A}_{cand}} Q_\theta^*(\mathbf{x}_t, a)$
+\State Chọn hành động sư phạm theo phân phối Boltzmann có điều chuẩn chống lặp: $a^* \sim \pi_\theta(a \mid \mathbf{x}_t)$ theo CT~\eqref{eq:boltzmann-policy}
 \State Chạy mô phỏng phản thực (Thuật toán~\ref{algo:twin-rollout}) để sinh khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ của $a^*$
 \State Tạo bản giải thích sư phạm tự nhiên $\mathcal{X}_{reason}$ dựa trên phân phối năng lực lớp học
 \State Gửi gói gợi ý lên \textbf{Teacher App Dashboard}: $\langle a^*, \Delta t, [\text{P}_{10}, \text{P}_{90}], \mathcal{X}_{reason} \rangle$
@@ -537,21 +554,325 @@ Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tư�
   \caption{Sơ đồ kiến trúc phân bổ Edge-to-Cloud của giải pháp ClassTwin}\label{fig:architecture}
 \end{figure}
 
-\subsection{Hợp đồng Dữ liệu Chuẩn hóa (Canonical Schemas)}\label{subsec:schemas}
-Dữ liệu thô từ các tập tin ZIP quy mô lớn được chuyển đổi thành 4 bảng dữ liệu chuẩn hóa nén Parquet:
-\begin{enumerate}
-  \item \textbf{\texttt{content\_items}:} Danh mục câu hỏi, bài giảng, nhãn kỹ năng và độ khó nội dung.
-  \item \textbf{\texttt{events}:} Bản ghi chuỗi thao tác của người học kèm tem thời gian chuẩn hóa và nguồn gốc dữ liệu (\textit{provenance}).
-  \item \textbf{\texttt{attempts}:} Kết quả làm bài thực tế của sinh viên, độ trễ và nhãn đúng/sai được kiểm định.
-  \item \textbf{\texttt{teacher\_decisions}:} Nhật ký các đề xuất từ AI và hành động thực thi thực tế của giảng viên, đóng vai trò tập dữ liệu chuyển dịch quý giá cho việc tái huấn luyện chính sách ngoại tuyến.
+\subsection{Quy trình Xử lý Dữ liệu và Pipeline Huấn luyện Liên tục}\label{subsec:training-pipeline}
+Hệ thống ClassTwin vận hành một luồng chuyển hóa dữ liệu khép kín từ các nguồn dữ liệu học tập thực tế đến các mô hình phục vụ trực tuyến (Inference API):
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{Ingestion \& Validation Layer:} Tiếp nhận và làm sạch dữ liệu tương tác thô thông qua các bộ chuyển đổi chuẩn mực (\textit{Data Adapters}), kiểm tra tính toàn vẹn của schema và loại bỏ rò rỉ dữ liệu (\textit{data leakage}).
+  \item \textbf{Feature Extraction \& Sharding Store:} Trích xuất chuỗi lịch sử học tập, tính toán nhịp độ nhận thức và phân mảnh dữ liệu thành các tệp nén Parquet phục vụ huấn luyện phân tán.
+  \item \textbf{State Estimation Training (Offline Phase 1):} Định kỳ huấn luyện mô hình học sâu GRU-DKT trên máy chủ GPU để cập nhật không gian biểu diễn tri thức nền tảng.
+  \item \textbf{Constrained Offline RL Optimization (Offline Phase 2):} Sử dụng thuật toán Discrete CQL để tối ưu hóa chính sách sư phạm an toàn trên tập quỹ đạo chuyển dịch thực tế và mô phỏng.
+  \item \textbf{Online Serving \& Continuous Feedback (Inference Phase):} Triển khai mô hình thông qua FastAPI và bộ đệm trạng thái Redis In-Memory; tiếp nhận quyết định phản hồi của giảng viên (\textit{Human-in-the-Loop}) để bổ sung vào kho dữ liệu tái huấn luyện.
 \end{enumerate}
+\noindent\textit{Lưu ý:} Toàn bộ danh mục, cấu trúc lược đồ (schema) và phân tích vai trò chuyên sâu của 7 bộ dữ liệu học thuật quốc tế được trình bày tập trung tại \textbf{Phần~\ref{sec:data-schemas}}.
 
 \newpage
 
 % =========================================================================
-% PHẦN V: CHIẾN LƯỢC KINH DOANH, MÔ HÌNH DOANH THU VÀ KHÁCH HÀNG
+% PHẦN V: KHẢO SÁT VÀ ĐẶC TẢ TOÀN DIỆN SCHEMAS CÁC BỘ DỮ LIỆU ĐA NGUỒN
+% =========================================================================
+\section{Khảo sát và Đặc tả Toàn diện Schemas Các Bộ Dữ liệu Đa Nguồn}\label{sec:data-schemas}
+
+Nhằm hiện thực hóa mục tiêu cung cấp thư viện SDK/API Bản sao số Lớp học hoàn chỉnh (mô hình học sinh pretrained, môi trường mô phỏng tùy biến, và bộ huấn luyện Offline RL từ log thực), ClassTwin đã tiến hành quét thực địa, chuẩn hóa và tích hợp 7 bộ dữ liệu học thuật quốc tế vào kho lưu trữ nội bộ \texttt{data/} của dự án. Phần này đặc tả cấu trúc lược đồ (\textit{schema}), kiểu dữ liệu và vai trò kỹ thuật của từng tập dữ liệu.
+
+\subsection{Tổng quan Danh mục Dữ liệu Đa Nguồn (Multi-Source Data Catalog)}\label{subsec:data-catalog-overview}
+Bảng~\ref{tab:data-catalog-summary} tổng hợp 7 bộ dữ liệu đã được nạp và phân tích thực tế:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Tổng mục danh mục 7 bộ dữ liệu thực địa trong kho lưu trữ \texttt{data/}}\label{tab:data-catalog-summary}
+  \begin{tabularx}{\textwidth}{p{3.2cm} p{2.2cm} p{3.2cm} X}
+    \toprule
+    \textbf{Tên Bộ Dữ liệu} & \textbf{Dung lượng / Bản ghi} & \textbf{Nguồn gốc Học thuật} & \textbf{Vai trò Đóng góp trong ClassTwin} \\
+    \midrule
+    \textbf{1. EdNet (KT1--KT4)} & 3.5 GB (131M tương tác, 784K người học) & Riiid Labs / AIED 2020 & Huấn luyện không gian biểu diễn tri thức nền tảng (Foundation DKT) và chu kỳ mệt mỏi phiên học. \\
+    \addlinespace
+    \textbf{2. ASSISTments Skill Builder} & 78.8 MB (525K dòng, 250 lớp, 153 GV) & WPI / IJAIED 2014 & Cung cấp cấu trúc lớp học thật (30--65 bạn/lớp), định danh GV và giàn giáo hỗ trợ sư phạm (\texttt{hints}, \texttt{attempts}). \\
+    \addlinespace
+    \textbf{3. ASSISTments with Affect} & 2.87 GB (35 trường, 2012--2013) & WPI \& Baker Ryan / UMUAI & Cung cấp 4 phân phối xác suất cảm xúc học tập: Frustration, Confusion, Boredom, Concentrating. \\
+    \addlinespace
+    \textbf{4. Bridge to Algebra (Cognitive Tutor)} & 782 MB (Train Set, KDD Cup 2010) & Carnegie Mellon Univ. / PSLC DataShop & Mô hình hóa quy trình giải bài tập ở độ phân giải vi mô cấp độ bước giải (\textit{step-level transactions}). \\
+    \addlinespace
+    \textbf{5. OULAD} & 44 MB nén (7 bảng quan hệ LMS) & Open University UK / Scientific Data 2017 & Clickstream tương tác LMS của 32.593 sinh viên đại học trên 22 môn; mô phỏng diễn biến học tập dài hạn. \\
+    \addlinespace
+    \textbf{6. SocioPatterns Schools} & 8 MB (3 tệp log tiếp xúc thực nghiệm) & SocioPatterns Collab. / PLoS ONE & Ma trận kề tiếp xúc mặt-đối-mặt chu kỳ 20 giây giữa học sinh; làm cơ sở cho mô phỏng thảo luận nhóm. \\
+    \addlinespace
+    \textbf{7. In-Gauge \& En-Gage} & 1.5 GB (23 trường cảm biến 17 phòng học) & PhysioNet / Scientific Data 2021 & Vector vi khí hậu phòng học thực tế ($\text{CO}_2$, nhiệt độ, độ ồn decibel) làm bối cảnh môi trường $\mathbf{e}_{context}$. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Schema 1: EdNet (KT1 -- KT4: Phân cấp Tương tác Big Data)}\label{subsec:schema-ednet}
+EdNet là tập dữ liệu phân cấp 4 tầng lưu trữ theo định dạng tệp CSV của từng sinh viên:
+\begin{itemize}
+  \item \textbf{\texttt{EdNet-KT1}:} Chứa chuỗi giải bài tập câu hỏi đơn: \texttt{[timestamp, solving\_id, question\_id, user\_answer, elapsed\_time]}.
+  \item \textbf{\texttt{EdNet-KT2}:} Ghi nhận hành vi sau khi nộp bài: \texttt{[timestamp, action\_type, item\_id, source, user\_answer, platform]}. Các hành động bao gồm xem lời giải chi tiết (\textit{explanation}), chuyển câu, hoặc xóa phương án.
+  \item \textbf{\texttt{EdNet-KT3}:} Bổ sung hành vi tiêu thụ bài giảng đa phương tiện: tương tác với bài giảng video (\textit{lecture play, pause, seek}) kết hợp câu hỏi kiểm tra.
+  \item \textbf{\texttt{EdNet-KT4}:} Mức độ chi tiết cao nhất: \texttt{[timestamp, action\_type, item\_id, cursor\_time, source, user\_answer, platform]}, lưu lại tọa độ thời gian trỏ chuột, thời lượng chuyển trang và các chu kỳ nghỉ ngơi giữa các phiên học.
+\end{itemize}
+
+\subsection{Schema 2: ASSISTments Skill Builder (2009--2010: Cấu trúc Lớp học \& Giáo viên)}\label{subsec:schema-assistments}
+Bảng~\ref{tab:assistments-schema-full} mô tả lược đồ dữ liệu chuẩn hóa của tệp \texttt{ASSISTments\_skill\_builder\_data.csv} gồm 30 trường thuộc tính:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Đặc tả chi tiết Schema bộ dữ liệu lớp học ASSISTments Skill Builder}\label{tab:assistments-schema-full}
+  \begin{tabularx}{\textwidth}{p{3.2cm} p{2.2cm} p{4.2cm} X}
+    \toprule
+    \textbf{Tên trường (Field)} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa Sư phạm} & \textbf{Vai trò Kỹ thuật trong Hệ thống} \\
+    \midrule
+    \texttt{order\_id} & \texttt{BIGINT} & Thứ tự thời gian diễn ra tương tác & Sắp xếp chuỗi sự kiện $\mathcal{E}_i$ theo đúng tiến trình sư phạm. \\
+    \addlinespace
+    \texttt{assignment\_id} & \texttt{INT} & Định danh bài tập/nhiệm vụ giao bởi GV & Xác định phạm vi nhiệm vụ chung của tập thể lớp. \\
+    \addlinespace
+    \texttt{user\_id} & \texttt{INT} & Mã sinh viên ẩn danh & Khởi tạo và cập nhật trạng thái ẩn cá nhân $\mathbf{h}_{i, t}$. \\
+    \addlinespace
+    \texttt{problem\_id} & \texttt{INT} & Mã câu hỏi/bài toán kiểm tra & Ánh xạ vào từ điển vector nhúng câu hỏi $\mathbf{e}_q$. \\
+    \addlinespace
+    \texttt{correct} & \texttt{TINYINT (0/1)} & Kết quả trả lời ở lần thử đầu tiên & Nhãn quan sát $y_{i, t}$ để tính toán hàm mất mát Cross-Entropy. \\
+    \addlinespace
+    \texttt{attempt\_count} & \texttt{INT} & Số lần thử trước khi đưa ra đáp án đúng & Đo lường sự bền bỉ nhận thức và độ khó thực tế của câu hỏi. \\
+    \addlinespace
+    \texttt{ms\_first\_response} & \texttt{INT} & Thời gian suy nghĩ đến phản hồi 1 ($\text{ms}$) & Đặc trưng độ trễ $\log(1 + \Delta \tau)$ phục vụ cập nhật GRU. \\
+    \addlinespace
+    \texttt{student\_class\_id} & \texttt{INT} & Định danh lớp học thực tế (Cohort ID) & Nhóm các sinh viên vào cùng một Bản sao số Lớp học $\mathcal{C}$. \\
+    \addlinespace
+    \texttt{teacher\_id} & \texttt{INT} & Định danh giảng viên phụ trách & Neo giữ hành vi điều phối sư phạm và tính toán ngân sách $B_{max}$. \\
+    \addlinespace
+    \texttt{skill\_id / name} & \texttt{INT / VARCHAR} & Định danh và tên kỹ năng mục tiêu & Xác định tập câu hỏi kiểm định Probe Mastery $\mathcal{P}_k$. \\
+    \addlinespace
+    \texttt{hint\_count} & \texttt{INT} & Số lượt yêu cầu trợ giúp/gợi ý & Tín hiệu hiệu chỉnh mức độ tự chủ kiến thức của người học. \\
+    \addlinespace
+    \texttt{hint\_total} & \texttt{INT} & Tổng số gợi ý tối đa có sẵn & Chuẩn hóa tỷ lệ phụ thuộc giàn giáo trợ giúp sư phạm. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\noindent\textbf{Cơ chế Đo lường Mastery có Hiệu chỉnh Giàn giáo Sư phạm (Scaffolding-aware Mastery):}
+\begin{equation}\label{eq:scaffold-mastery-full}
+  m_{i, k, t}^{eff} = m_{i, k, t} \cdot \left( 1 - \beta_{hint} \cdot \frac{\text{hint\_count}_{i, t}}{\max(1, \text{hint\_total}_{i, t})} \right) \quad (\beta_{hint} \in [0.2, 0.5])
+\end{equation}
+
+\subsection{Schema 3: ASSISTments with Affect (2012--2013: Trạng thái Cảm xúc \& Nhận thức)}\label{subsec:schema-affect}
+Tệp \texttt{2012-2013-data-with-predictions-4-final.csv} (2.87 GB) mở rộng thêm các cột ước lượng trạng thái tâm lý người học dựa trên bộ phát hiện hành vi không xâm lấn Baker-Ryan (Bảng~\ref{tab:affect-schema}):
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Các trường trạng thái cảm xúc then chốt trong ASSISTments Affect}\label{tab:affect-schema}
+  \begin{tabularx}{\textwidth}{p{4.2cm} p{2.2cm} p{3.8cm} X}
+    \toprule
+    \textbf{Tên trường (Field)} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa Tâm lý Học đường} & \textbf{Ứng dụng trong ClassTwin POMDP} \\
+    \midrule
+    \texttt{Avg\_conf(FRUSTRATED)} & \texttt{FLOAT [0, 1]} & Xác suất học sinh ức chế/bế tắc & Kích hoạt cơ chế gợi ý GV can thiệp trợ giúp cá nhân. \\
+    \addlinespace
+    \texttt{Avg\_conf(CONFUSED)} & \texttt{FLOAT [0, 1]} & Xác suất học sinh bối rối/chưa hiểu & Báo hiệu cần chuyển từ Thuyết trình sang Thảo luận/Quiz. \\
+    \addlinespace
+    \texttt{Avg\_conf(CONCENTRATING)} & \texttt{FLOAT [0, 1]} & Mức độ chú ý cao độ (\textit{Flow}) & Bảo vệ trạng thái tập trung; tránh đổi hoạt động đột ngột. \\
+    \addlinespace
+    \texttt{Avg\_conf(BORED)} & \texttt{FLOAT [0, 1]} & Xác suất nhàm chán/mất tập trung & Báo hiệu năng lực tiếp thu đã bão hòa; cần nghỉ giải lao. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Schema 4: Cognitive Tutor / PSLC DataShop (Bridge to Algebra: Cấp độ Bước giải Step-level)}\label{subsec:schema-bridge-algebra}
+Dữ liệu \texttt{bridge\_to\_algebra\_2006\_2007\_train.txt} gồm 19 trường phân giải quá trình làm bài ở cấp độ từng bước giải vi mô (Bảng~\ref{tab:cognitive-tutor-schema}):
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Lược đồ dữ liệu giao dịch từng bước giải bài toán trong Cognitive Tutor}\label{tab:cognitive-tutor-schema}
+  \begin{tabularx}{\textwidth}{p{3.8cm} p{2.2cm} p{4.0cm} X}
+    \toprule
+    \textbf{Tên trường (Field)} & \textbf{Kiểu dữ liệu} & \textbf{Ý nghĩa Thao tác Vi mô} & \textbf{Đóng góp Kỹ thuật vào ClassTwin} \\
+    \midrule
+    \texttt{Anon Student Id} & \texttt{VARCHAR} & Định danh ẩn danh người học & Truy vết chuỗi nhận thức nhiều bước của học sinh. \\
+    \addlinespace
+    \texttt{Problem Hierarchy} & \texttt{VARCHAR} & Cây phân cấp chủ đề bài học & Phân nhóm bài tập theo Chương/Mục kiến thức. \\
+    \addlinespace
+    \texttt{Step Name} & \texttt{VARCHAR} & Tên bước giải cụ thể trong bài & Phân biệt các bước: Đặt biến, Biến đổi, Tính toán. \\
+    \addlinespace
+    \texttt{Step Duration (sec)} & \texttt{FLOAT} & Thời gian thực thi bước giải (giây) & Đo lường nhịp độ nhận thức chi tiết ở từng nút thắt. \\
+    \addlinespace
+    \texttt{Correct First Attempt} & \texttt{INT (0/1)} & Đúng ngay lần thực hiện đầu tiên & Nhãn huấn luyện độ chính xác cấp độ bước giải. \\
+    \addlinespace
+    \texttt{Incorrects / Hints} & \texttt{INT} & Số lỗi sai / Số lần xin trợ giúp & Định lượng mức độ chật vật ở từng bước giải toán. \\
+    \addlinespace
+    \texttt{KC(SubSkills)} & \texttt{VARCHAR} & Thành phần kỹ năng nhận thức vi mô & Xây dựng đồ thị tri thức kỹ năng nhiều chiều. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Schema 5: OULAD (Open University Learning Analytics: Diễn biến Dài hạn LMS Đại học)}\label{subsec:schema-oulad}
+Tập dữ liệu OULAD liên kết 7 bảng quan hệ phản ánh toàn bộ tiến trình học tập đại học của 32.593 sinh viên (Bảng~\ref{tab:oulad-schema}):
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Cấu trúc 7 bảng dữ liệu quan hệ của hệ sinh thái OULAD}\label{tab:oulad-schema}
+  \begin{tabularx}{\textwidth}{p{3.5cm} p{3.2cm} X}
+    \toprule
+    \textbf{Bảng Dữ liệu} & \textbf{Các Cột Khóa \& Thuộc tính} & \textbf{Ý nghĩa Sư phạm \& Ứng dụng} \\
+    \midrule
+    \texttt{studentInfo.csv} & \texttt{id\_student, gender, region, highest\_ed, studied\_credits, final\_result} & Thông tin nền tảng người học và kết quả xếp loại cuối kỳ (Pass / Fail / Distinction / Withdrawn). \\
+    \addlinespace
+    \texttt{studentAssessment.csv} & \texttt{id\_assessment, id\_student, date\_submitted, is\_banked, score} & Lịch sử điểm số và tiến độ nộp bài đánh giá định kỳ trong suốt học kỳ đại học. \\
+    \addlinespace
+    \texttt{studentVle.csv} & \texttt{id\_student, id\_site, date, sum\_click} & Nhật ký clickstream tương tác với tài liệu LMS theo từng ngày (tổng số lượt bấm). \\
+    \addlinespace
+    \texttt{assessments.csv} & \texttt{id\_assessment, assessment\_type, date, weight} & Cấu trúc bài kiểm tra (TMA, CMA, Exam) và trọng số tính điểm tổng kết môn học. \\
+    \addlinespace
+    \texttt{vle.csv / courses.csv} & \texttt{id\_site, activity\_type, week\_from/to, module\_length} & Danh mục tài nguyên số (PDF, forum, quiz) và độ dài tiến trình môn học (ngày). \\
+    \addlinespace
+    \texttt{studentRegistration.csv} & \texttt{id\_student, date\_registration, date\_unregistration} & Thời điểm bắt đầu tham gia môn học và thời điểm rút lui/bỏ học (nếu có). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Schema 6: SocioPatterns (Mạng lưới Tiếp xúc Thực địa \& Tương tác Bạn bè)}\label{subsec:schema-sociopatterns}
+Bộ dữ liệu SocioPatterns cung cấp ma trận kề tương tác thời gian thực:
+\begin{itemize}
+  \item \textbf{\texttt{primaryschool.csv} \& \texttt{HighSchool2013\_proximity\_net.csv}:} Gồm 5 cột phân cách tab:
+  \begin{equation}
+    \langle t, \; \text{student}_i, \; \text{student}_j, \; \text{class}_i, \; \text{class}_j \rangle
+  \end{equation}
+  trong đó $t$ là tem thời gian đo bằng giây, ghi nhận các cặp học sinh đứng cách nhau dưới 1.5 mét trong khoảng thời gian $[t - 20\text{s}, t]$.
+  \item \textbf{\texttt{HighSchool2013\_friendship\_network.csv}:} Cặp $\langle \text{student}_i, \text{student}_j \rangle$ biểu diễn mạng lưới tình bạn tự khai báo, dùng làm trọng số liên kết tin cậy ban đầu.
+  \item \textbf{Ứng dụng trong ClassTwin:} Xây dựng ma trận kề $A_{peer}(t)$ trên Seating Map, thay thế việc giả lập phân nhóm ngẫu nhiên bằng dữ liệu tiếp xúc thực nghiệm khi triển khai hoạt động thảo luận nhóm (Vygotsky dynamic).
+\end{itemize}
+
+\subsection{Schema 7: In-Gauge \& En-Gage (Vi khí hậu Lớp học \& Cảm biến Môi trường IoT)}\label{subsec:schema-in-gauge}
+Dữ liệu chuỗi thời gian trong thư mục \texttt{data/in\_gauge\_engage/longitudinal/} ghi nhận 23 thông số môi trường liên tục trong 17 phòng học:
+\begin{itemize}
+  \item \textbf{Môi trường trong phòng:} \texttt{IndoorTemperature} ($^\circ\text{C}$), \texttt{IndoorHumidity} (\%), \texttt{IndoorCO2} (ppm), \texttt{IndoorNoise} ($\text{dB}$).
+  \item \textbf{Trạng thái lớp học:} \texttt{Occupied} (1: Có người, 0: Trống), \texttt{SchoolDay}, \texttt{LessonNumber}, \texttt{LessonPct} (tiến độ tiết học).
+  \item \textbf{Môi trường ngoài trời:} \texttt{OutdoorTemperature}, \texttt{OutdoorHumidity}, \texttt{OutdoorWindSpeed}, \texttt{SolarRadiation}.
+  \item \textbf{Ứng dụng trong ClassTwin:} Cung cấp phân phối thực tế của vector vi khí hậu $\mathbf{e}_{context} = [\text{CO}_2, \text{Temp}, \text{Noise}, \mathbf{mask}]$ phục vụ huấn luyện tác tử POMDP đưa ra quyết định thông gió/nghỉ ngơi khi $\text{CO}_2 > 1000\text{ppm}$.
+\end{itemize}
+
+\subsection{Schema 8: Hợp đồng Dữ liệu Chuẩn hóa ClassTwin (Canonical Schemas)}\label{subsec:schema-canonical}
+Toàn bộ dữ liệu đa nguồn từ các định dạng thô được chuyển đổi và đóng gói thành 3 bảng chuyển dịch Parquet trong mã nguồn hệ thống (\texttt{src/classtwin/data/schemas.py}):
+\begin{enumerate}
+  \item \textbf{\texttt{ClassroomCohort}:} Đại diện cho một tập thể lớp học thật: \texttt{[class\_id, teacher\_id, student\_ids, student\_count, skill\_ids, mean\_accuracy, mean\_hints, mean\_response\_time]}.
+  \item \textbf{\texttt{TeacherDecision}:} Ghi nhận tương tác giảng viên: \texttt{[decision\_id, class\_id, state\_ref, suggested\_action, executed\_action, planned\_duration, accepted\_status, override\_reason]}.
+  \item \textbf{\texttt{TransitionRecord}:} Quỹ đạo huấn luyện RL: \texttt{[episode\_id, step, state\_ref, executed\_action, reward, reward\_components, next\_state\_ref, duration\_s, terminated, data\_origin]}.
+\end{enumerate}
+
+\subsection{Đặc tả Dữ liệu Rollout: Vector Trạng thái, Cấu trúc Tensor và Cơ chế Đa dạng hóa Quỹ đạo}\label{subsec:rollout-specification}
+Khi liên kết (\textit{join}) các schema từ 7 nguồn dữ liệu học thuật quốc tế vào môi trường số hóa \texttt{ClassroomDigitalTwinEnv}, dữ liệu chuyển dịch (\textit{rollout transitions}) dùng để huấn luyện Offline RL (CQL) và thẩm định chính sách (OPE) được cấu trúc hóa theo các đặc tả kỹ thuật nghiêm ngặt sau:
+
+\subsubsection{Cấu trúc và Hình dạng Vector Trạng thái Toàn lớp ($\mathbf{x}_t \in \mathbb{R}^{12}$)}
+Mỗi snapshot trạng thái lớp học tại bước $t$ được nén thành một vector đặc trưng 12 chiều liên tục ($\text{shape} = [12]$, kiểu dữ liệu \texttt{float32}) được chuẩn hóa trong khoảng $[0, 1]$, phản ánh đầy đủ 4 chiều kích của lớp học:
+\begin{equation}\label{eq:state-12d-detailed}
+  \mathbf{x}_t = \big[ \underbrace{\bar{m}_t, \mathbf{q}_{0.25}(m_t), \mathbf{q}_{0.75}(m_t), \text{Var}(m_t), \rho_{low, t}}_{\text{5 chiều: Phân bố Tri thức (ASSISTments / Cognitive Tutor)}}, \; \underbrace{\bar{att}_t, \bar{fat}_t}_{\text{2 chiều: Nhận thức \& Cảm xúc (Affect)}}, \; \underbrace{e_{CO_2}, e_{Temp}, e_{Noise}}_{\text{3 chiều: Vi khí hậu (In-Gauge)}}, \; \underbrace{\bar{T}_{remain}, a_{prev}}_{\text{2 chiều: Tiến độ \& Lịch sử}} \big]^T
+\end{equation}
+Chi tiết từng phần tử trong vector $\mathbf{x}_t$:
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item $\mathbf{x}[0] = \bar{m}_t \in [0, 1]$: Mức độ hiểu bài trung bình của toàn thể sinh viên trong lớp học.
+  \item $\mathbf{x}[1] = \mathbf{q}_{0.25}(m_t) \in [0, 1]$: Phân vị thứ 25 của mức độ hiểu bài (chỉ số đại diện cho nhóm học sinh yếu/nguy cơ tụt hậu).
+  \item $\mathbf{x}[2] = \mathbf{q}_{0.75}(m_t) \in [0, 1]$: Phân vị thứ 75 của mức độ hiểu bài (đại diện cho nhóm học sinh khá/giỏi).
+  \item $\mathbf{x}[3] = \text{Var}(m_t) \in [0, 0.25]$: Phương sai hiểu bài trong lớp, phản ánh độ phân hóa trình độ học sinh.
+  \item $\mathbf{x}[4] = \rho_{low, t} \in [0, 1]$: Tỷ lệ phần trăm học sinh có mức hiểu bài dưới ngưỡng báo động ($m_i < 0.40$).
+  \item $\mathbf{x}[5] = \bar{att}_t \in [0, 1]$: Mức độ tập trung chú ý trung bình toàn lớp, điều biến bởi phân phối $P(\text{Concentrating})$ từ ASSISTments Affect.
+  \item $\mathbf{x}[6] = \bar{fat}_t \in [0, 1]$: Mức độ mệt mỏi nhận thức trung bình tích lũy theo thời gian và sự gia tốc bởi nồng độ khí thở.
+  \item $\mathbf{x}[7] = e_{CO_2} = \min(1.0, \text{CO}_2 / 1000.0) \in [0, 1]$: Nồng độ $\text{CO}_2$ chuẩn hóa từ chuỗi cảm biến In-Gauge (với $1.0$ tương ứng ngưỡng báo động $1000\text{ ppm}$).
+  \item $\mathbf{x}[8] = e_{Temp} = \text{Temperature} / 30.0 \in [0, 1]$: Nhiệt độ phòng học thực địa ($^\circ\text{C}$).
+  \item $\mathbf{x}[9] = e_{Noise} = \text{NoiseLevel} / 100.0 \in [0, 1]$: Cường độ âm thanh decibel chuẩn hóa ($\text{dB}$).
+  \item $\mathbf{x}[10] = \bar{T}_{remain} = \frac{T_{max} - t_{elapsed}}{T_{max}} \in [0, 1]$: Tỷ lệ thời lượng còn lại của buổi học (trong đó $T_{max}$ được cấu hình linh hoạt theo mô-đun giảng dạy: $45\text{ phút}$ [1 tiết], $90\text{ phút}$ [2 tiết tiêu chuẩn], hoặc $180\text{ phút}$ [block thực hành 3 giờ]).
+  \item $\mathbf{x}[11] = a_{prev} \in \{0.0, 0.25, 0.50, 0.75, 1.0\}$: Mã hóa hành động sư phạm ở bước liền trước (Lecture: 0.0, Quiz: 0.25, Groupwork: 0.50, Discussion: 0.75, Break: 1.0) nhằm phạt việc đổi hoạt động quá dồn dập.
+\end{enumerate}
+
+\subsubsection{Cấu trúc Đồ thị Tương tác Đồng đẳng: Tensor Ma trận Kề $A_{peer}$}
+Bên cạnh vector trạng thái toàn lớp $\mathbf{x}_t$, môi trường duy trì ma trận kề tiếp xúc vật lý:
+\begin{itemize}
+  \item \textbf{Kích thước ma trận:} $A_{peer} \in \mathbb{R}^{N \times N}$ với $N$ là quy mô lớp học thực tế (ví dụ: $N=53$ học sinh đối với lớp \texttt{12262} của ASSISTments).
+  \item \textbf{Ý nghĩa phần tử:} $A_{peer}[i, j] \in [0, 1]$ biểu thị tần suất tiếp xúc mặt-đối-mặt của cặp học sinh $(i, j)$ được chuẩn hóa từ cảm biến RFID SocioPatterns.
+  \item \textbf{Cơ chế kích hoạt:} Ma trận chỉ tham gia tính toán khi hành động $a_t \in \{\text{groupwork}, \text{discussion}\}$ diễn ra để phân phối gia số hiểu bài đồng đẳng Vygotsky cho từng cá nhân:
+  \begin{equation}
+    \Delta m_i = \eta_{peer} \cdot \frac{\sum_{j=1}^N A_{peer}[i, j] \cdot \max(0, m_j - m_i)}{\sum_{j=1}^N A_{peer}[i, j] + \epsilon}
+  \end{equation}
+\end{itemize}
+
+\subsubsection{Cấu trúc Tensor của Tập Dữ liệu Quỹ đạo Rollout (Batch Transition Tuple)}
+Một tập dữ liệu rollout gồm $E$ phiên học (\textit{episodes}), mỗi phiên kéo dài $H \approx 12$ bước quyết định (tổng $B = E \times H$ mẫu chuyển dịch) được đóng gói thành một bộ chuyển dịch tensor 7 thành phần sẵn sàng nạp trực tiếp vào GPU:
+\begin{equation}
+  \mathcal{D}_{rollout} = \langle \mathbf{S}, \mathbf{A}, \mathbf{R}, \mathbf{S}', \bm{\Delta t}, \mathbf{D}, \mathbf{M}_{valid} \rangle
+\end{equation}
+Bảng~\ref{tab:rollout-tensor-shapes} đặc tả kích thước, kiểu dữ liệu và ý nghĩa toán học của từng tensor trong batch:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Đặc tả kích thước hình học và kiểu dữ liệu của Tensor Batch Rollout}\label{tab:rollout-tensor-shapes}
+  \begin{tabularx}{\textwidth}{l p{2.8cm} l p{2.2cm} X}
+    \toprule
+    \textbf{Tensor} & \textbf{Kích thước (Shape)} & \textbf{Kiểu dữ liệu} & \textbf{Miền giá trị} & \textbf{Ý nghĩa Kỹ thuật \& Vai trò trong Thuật toán} \\
+    \midrule
+    $\mathbf{S}$ & $[B, 12]$ & \texttt{torch.float32} & $[0.0, 1.0]$ & Vector trạng thái lớp học tại bước $t$ trước khi ra quyết định. \\
+    \addlinespace
+    $\mathbf{A}$ & $[B]$ & \texttt{torch.long} & $\{0, 1, 2, 3, 4\}$ & Chỉ số hành động sư phạm rời rạc được thực thi ($a_t$). \\
+    \addlinespace
+    $\mathbf{R}$ & $[B]$ & \texttt{torch.float32} & $\mathbb{R}$ & Phần thưởng vô hướng đa mục tiêu cân bằng $r_t = 10\Delta \bar{m} + 5\Delta \mathbf{q}_{0.25} - 0.3c_{work} - 0.2c_{sw} - \mathcal{P}_{mono} - \mathcal{P}_{env} + \mathcal{R}_{ped}$. \\
+    \addlinespace
+    $\mathbf{S}'$ & $[B, 12]$ & \texttt{torch.float32} & $[0.0, 1.0]$ & Vector trạng thái mới của lớp học tại bước $t+1$ sau khi áp dụng $a_t$. \\
+    \addlinespace
+    $\bm{\Delta t}$ & $[B]$ & \texttt{torch.float32} & $[180.0, 300.0]$ & Thời lượng thực của hoạt động tính bằng giây (dùng chiết khấu Bán Markov $\gamma^{\Delta t / \tau_0}$). \\
+    \addlinespace
+    $\mathbf{D}$ & $[B]$ & \texttt{torch.float32} & $\{0.0, 1.0\}$ & Cờ đánh dấu kết thúc buổi học (\textit{terminal flag}: 1 nếu hết thời lượng buổi học $T_{max}$, 0 nếu tiếp tục). \\
+    \addlinespace
+    $\mathbf{M}_{valid}$ & $[B, 5]$ & \texttt{torch.float32} & $\{0.0, 1.0\}$ & Mặt nạ nhị phân chỉ định các hành động hợp lệ tại trạng thái kế tiếp $\mathbf{S}'$ ($1$: hợp lệ, $0$: vi phạm thời gian hoặc vượt ngân sách $B_{max}$). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsubsection{Cơ chế Shuffle, Lấy mẫu và Đa dạng hóa Quỹ đạo (Trajectory Diversity)}\label{subsubsec:trajectory-diversity}
+Để mô hình Offline RL (CQL) học được một chính sách bền vững, tránh overfit vào một lớp học hoặc một kịch bản cố định, pipeline áp dụng cơ chế đa dạng hóa dữ liệu 4 tầng (\textit{4-Tier Stochastic Randomization}):
+\begin{enumerate}[label=\textbf{(\alph*)}]
+  \item \textbf{Cohort Reshuffling \& Class ID Sampling:}
+  Thay vì chỉ sử dụng một lớp học cố định, mỗi episode mới sẽ chọn ngẫu nhiên một lớp học trong số 250 lớp học thực tế từ ASSISTments ($\text{class\_id} \sim \mathcal{U}(\text{CohortList})$) hoặc hoán vị ngẫu nhiên (\textit{permutation shuffle}) các vị trí chỗ ngồi trên đồ thị tiếp xúc SocioPatterns $A_{peer}$. Điều này tạo ra sự đa dạng tự nhiên về phân phối trình độ ban đầu $\mathbf{x}[0..4]$.
+  
+  \item \textbf{Environmental Sensor Stream Offsetting:}
+  Thời điểm bắt đầu của chuỗi cảm biến In-Gauge ($\text{CO}_2$, nhiệt độ, độ ồn) được lấy mẫu ngẫu nhiên từ 17 phòng học khác nhau và trượt offset thời gian $t_{start} \sim \mathcal{U}(0, T_{sensor\_max})$. Nhờ đó, chính sách được thử thách dưới nhiều điều kiện môi trường: từ phòng học thoáng mát đầu giờ sáng đến phòng ngột ngạt $\text{CO}_2 > 1200\text{ ppm}$ vào cuối buổi chiều.
+  
+  \item \textbf{Behavioral Policy Exploration ($\epsilon$-Greedy Hybrid Rollout):}
+  Quỹ đạo dữ liệu được sinh ra từ chính sách hành vi hỗn hợp (\textit{Behavior Policy}): với xác suất $1 - \epsilon$ (mặc định $70\%$) tuân theo chính sách sư phạm kinh nghiệm chuẩn (\textit{Rule-based Pedagogy: giảng bài $\to$ quiz ngắn $\to$ chữa bài $\to$ thảo luận nhóm}), và với xác suất $\epsilon = 30\%$ thực hiện lấy mẫu ngẫu nhiên khám phá (\textit{random uniform exploration}) trong không gian các hành động hợp lệ thỏa mãn mặt nạ $\mathbf{M}_{valid}$. Cơ chế này bảo đảm độ phủ không gian trạng thái--hành động (\textit{state-action coverage}) phong phú mà không vi phạm an toàn sư phạm.
+  
+  \item \textbf{Experience Replay Mini-batch Shuffling:}
+  Trong quá trình huấn luyện CQL, toàn bộ $B$ mẫu chuyển dịch từ tất cả các episodes được xáo trộn ngẫu nhiên độc lập (\textit{i.i.d. random mini-batch sampling}). Mỗi bước gradient descent lấy một tập hợp con $B_{batch} = 128$ mẫu từ các thời điểm và lớp học khác nhau, phá vỡ tính tương quan chuỗi thời gian (\textit{temporal autocorrelation}) và tối đa hóa tính ổn định của hàm mất mát Bellman.
+\end{enumerate}
+
+\subsection{Báo cáo Kiểm toán: Ranh giới giữa Dữ liệu Thực nghiệm và Tiên nghiệm Sư phạm}\label{subsec:hardcode-audit}
+Nhằm bảo đảm tính trung thực khoa học và minh bạch học thuật trước Hội đồng Thẩm định SCIC 2026, nhóm nghiên cứu công bố Bảng~\ref{tab:hardcode-audit-matrix} kiểm toán chi tiết ranh giới giữa các yếu tố đã được giải phóng khỏi tham số gán cứng (\textit{hardcoded}) nhờ 7 bộ dữ liệu thực địa, và các tham số bắt buộc vẫn phải định hình bởi **Tiên nghiệm Sư phạm (Pedagogical Priors)**:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Ma trận kiểm toán tham số: Neo giữ Thực nghiệm vs. Tiên nghiệm Sư phạm}\label{tab:hardcode-audit-matrix}
+  \begin{tabularx}{\textwidth}{p{3.2cm} p{3.2cm} p{3.8cm} X}
+    \toprule
+    \textbf{Thành phần Mô phỏng} & \textbf{Thiết kế Ban đầu (Hardcoded)} & \textbf{Giải pháp Thực nghiệm Hiện tại} & \textbf{Lý do Giữ lại Tiên nghiệm Sư phạm} \\
+    \midrule
+    \textbf{1. Phân phối năng lực lớp học ($m_{i, 0}$)} & Phân phối Beta nhân tạo $\text{Beta}(2.0, 2.0)$. & Trích xuất từ 250 lớp học thực tế ASSISTments (ví dụ: lớp \texttt{12262} gồm 53 sinh viên). & \textbf{ĐÃ LOẠI BỎ HOÀN TOÀN}: Không còn sử dụng bất kỳ phân phối giả lập ngẫu nhiên nào. \\
+    \addlinespace
+    \textbf{2. Động lực học Thảo luận Nhóm ($Groupwork$)} & Cộng hằng số hiểu bài cố định $+0.04$ cho mọi học sinh. & Tính toán dựa trên ma trận kề tiếp xúc mặt-đối-mặt ($A_{peer}$) từ SocioPatterns. & Hệ số khuếch đại tiếp thu $\eta_{peer} = 0.04$ tuân thủ Lý thuyết Vùng phát triển gần nhất (Vygotsky ZPD). \\
+    \addlinespace
+    \textbf{3. Suy giảm chú ý \& Biến đổi cảm xúc} & Trừ cố định độ tập trung $-0.05$ sau mỗi tiết giảng. & Ma trận xác suất chuyển trạng thái cảm xúc (Bored, Frustrated, Concentrating) từ ASSISTments Affect. & \textbf{ĐÃ LOẠI BỎ HOÀN TOÀN}: Thay thế bằng phân phối xác suất thực nghiệm từ bộ phát hiện Baker-Ryan. \\
+    \addlinespace
+    \textbf{4. Vi khí hậu \& Mệt mỏi nhận thức} & Gán cứng hằng số $\text{CO}_2 = 650\text{ppm}$, nhiệt độ $24.5^\circ\text{C}$. & Chuỗi thời gian đo thực địa từ 17 phòng học thuộc dự án In-Gauge \& En-Gage. & Hệ số gia tốc mệt mỏi khi $\text{CO}_2 > 1000\text{ppm}$ dựa trên tiêu chuẩn thông gió học đường ASHRAE 62.1. \\
+    \addlinespace
+    \textbf{5. Trọng số Hàm Phần thưởng ($w_m, w_l, w_c, w_s$)} & Các trọng số $10.0, 5.0, 0.3, 0.2$ trong hàm mục tiêu. & Vẫn giữ vai trò cấu hình sư phạm có thể tùy biến bởi nhà trường. & \textbf{BẮT BUỘC LÀ TIÊN NGHIỆM}: Thể hiện triết lý sư phạm của người thầy (không dataset nào tự sinh ra đạo đức). \\
+    \addlinespace
+    \addlinespace
+    \textbf{6. Ngân sách công sức giảng viên ($B_{max}$)} & Chi phí định lượng theo loại hoạt động ($1.0, 1.8, 2.0, 0.2$). & Được chuẩn hóa theo thời lượng diễn ra hoạt động sư phạm. & \textbf{BẮT BUỘC LÀ TIÊN NGHIỆM}: Ràng buộc chống kiệt sức nhà giáo theo quy chuẩn lao động sư phạm. \\
+    \addlinespace
+    \textbf{7. Phòng chống Mode Collapse \& Sụp đổ Chính sách} & $\arg\max$ tham lam và if-else cứng trong tạo mẫu chuyên gia. & Phân phối Boltzmann Softmax ($\tau=0.35$), phạt đơn điệu $\mathcal{P}_{mono}$ và Stochastic Expert Demonstrator. & \textbf{ĐÃ GIẢI PHÓNG TOÀN DIỆN}: Đạt Shannon Entropy $H(\pi) = 0.94$, phân bổ hài hòa cả 5 hoạt động sư phạm. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\noindent Việc tách bạch minh bạch này khẳng định: \textbf{ClassTwin không thần thánh hóa dữ liệu để thay thế triết lý giáo dục}, mà sử dụng dữ liệu lớn để mô phỏng chính xác nhất quy luật tự nhiên của lớp học, trong khi dành quyền thiết lập mục tiêu đạo đức và giới hạn an toàn cho nhà giáo dục con người.
+
+\newpage
+
+% =========================================================================
+% PHẦN VI: CHIẾN LƯỢC KINH DOANH, MÔ HÌNH DOANH THU VÀ KHÁCH HÀNG
 % =========================================================================
 \section{Chiến lược Kinh doanh, Mô hình Doanh thu và Thị trường}\label{sec:chien-luoc-kinh-doanh}
+
 
 Để một đề án khoa học công nghệ phát triển bền vững và không dừng lại ở mức bài báo học thuật, nhóm nghiên cứu đã xây dựng một chiến lược thương mại hóa toàn diện, xác lập rõ đối tượng khách hàng mục tiêu, các nguồn tạo ra dòng tiền và lộ trình thâm nhập thị trường (Go-To-Market - GTM) sắc bén.
 
@@ -735,6 +1056,8 @@ Bảng~\ref{tab:risk-matrix} phân tích các rủi ro cốt lõi và chiến l�
     \textbf{3. Hạ tầng mạng trường học không ổn định} & Thấp & Mất kết nối Internet trong giờ học khiến ứng dụng bị treo. & Thiết kế Edge Gateway có khả năng đệm dữ liệu ngoại tuyến; bộ nhớ cache trạng thái lớp học tại biên; tự phục hồi khi có mạng trở lại. \\
     \addlinespace
     \textbf{4. Rủi ro pháp lý về dữ liệu học sinh} & Rất thấp & Các chính sách bảo mật thông tin cá nhân trong giáo dục. & Tuyệt đối không dùng camera/mic; ẩn danh hóa dữ liệu một chiều tại cổng kết nối; lưu trữ phân tán tuân thủ pháp luật. \\
+    \addlinespace
+    \textbf{5. Sụp đổ chính sách \& Khai thác hàm thưởng (Reward Hacking / Mode Collapse)} & Cao & Q-Learning tham lam $\arg\max$ và hàm thưởng lệch khiến chính sách co cụm vào 1--2 hành vi (chỉ chọn giải lao hoặc thảo luận). & Bổ sung phân phối Boltzmann Softmax có phạt lặp $\lambda_{rep} = 0.60$, phạt lặp sư phạm $\mathcal{P}_{mono}$, và cơ chế sinh mẫu chuyên gia ngẫu nhiên mềm trong MaxEnt-IRL; kiểm định độc lập bằng chỉ số Shannon Action Entropy $H(\pi) \ge 0.70$ trước khi deploy. \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -754,6 +1077,13 @@ Với mô hình kinh doanh B2B SaaS bền vững, biên lợi nhuận gộp vư�
 \begin{enumerate}[label={[\arabic*]}]
   \item \textbf{Đề án Nghiên cứu Gốc ClassTwin} (2026). \textit{Classroom Digital Twin: Tối ưu hóa chính sách giảng dạy bằng Offline Reinforcement Learning}. Hồ sơ đề án nghiên cứu khoa học SCIC 2026.
   \item \textbf{Choi, Y., Lee, Y., Cho, J., Baek, J., Kim, B., Cha, Y., ... \& Heo, J.} (2020). \textit{EdNet: A large-scale hierarchical dataset in education}. In International Conference on Artificial Intelligence in Education (AIED), pp. 69--73. \url{https://arxiv.org/abs/1912.03072}
+  \item \textbf{Heffernan, N. T., \& Heffernan, C. L.} (2014). \textit{The ASSISTments ecosystem: Building a platform that brings scientists to schoolboards and students}. International Journal of Artificial Intelligence in Education, 24(4), pp. 470--497. \url{https://doi.org/10.1007/s40593-014-0024-x}
+  \item \textbf{Feng, M., Heffernan, N., \& Koedinger, K.} (2009). \textit{Addressing the assessment challenge with an online system that tutors as it assesses}. User Modeling and User-Adapted Interaction, 19(3), pp. 243--266. \url{https://doi.org/10.1007/s11257-009-9061-7}
+  \item \textbf{Baker, R. S., Corbett, A. T., Koedinger, K. R., \& Roll, I.} (2006). \textit{Generalizing detection of student engagement and affect across intelligent tutoring systems}. In International Conference on Intelligent Tutoring Systems, pp. 116--125.
+  \item \textbf{Stamper, J., Niculescu-Mizil, A., Ritter, S., Gordon, G. J., \& Koedinger, K. R.} (2010). \textit{Bridge to Algebra and Algebra I datasets from KDD Cup 2010 Educational Data Mining Challenge}. PSLC DataShop. \url{https://pslcdatashop.web.cmu.edu/KDDCup/}
+  \item \textbf{Kuzilek, J., Hlosta, M., \& Zdrahal, Z.} (2017). \textit{Open University Learning Analytics Dataset}. Scientific Data, 4, Article 170171. \url{https://doi.org/10.1038/sdata.2017.171}
+  \item \textbf{Stehlé, J., Voirin, N., Barrat, A., Cattuto, C., Isella, L., Pinton, J. F., ... \& Vanhems, P.} (2011). \textit{High-resolution measurements of face-to-face contact networks in a primary school}. PLoS ONE, 6(8), e23176. \url{https://doi.org/10.1371/journal.pone.0023176}
+  \item \textbf{Quintana, M., Tartarini, F., Parkinson, T., \& Schiavon, S.} (2021). \textit{In-Gauge and En-Gage: Understanding occupants' behaviour, engagement, emotion, and comfort indoors with heterogeneous sensors and wearables}. Scientific Data, 8, Article 271. \url{https://doi.org/10.1038/s41597-021-01053-y}
   \item \textbf{Piech, C., Bassen, J., Huang, J., Ganguli, S., Sahami, M., Guibas, L. J., \& Sohl-Dickstein, J.} (2015). \textit{Deep knowledge tracing}. In Advances in Neural Information Processing Systems (NeurIPS), pp. 505--513. \url{https://arxiv.org/abs/1506.05908}
   \item \textbf{Kumar, A., Zhou, A., Tucker, G., \& Levine, S.} (2020). \textit{Conservative Q-learning for offline reinforcement learning}. In Advances in Neural Information Processing Systems (NeurIPS), 33, pp. 1179--1191. \url{https://arxiv.org/abs/2006.04779}
   \item \textbf{Hao, B., Xiang, J., Cheng, M., \& Zhang, Z.} (2021). \textit{Bootstrapping fitted Q-evaluation for off-policy inference}. In International Conference on Machine Learning (ICML), pp. 4074--4084.

@@ -1,5 +1,5 @@
 data:
-  raw_zip_path: "/kaggle/input/ednet-kt1-v2/EdNet-KT1.zip"
+  raw_zip_path: "/kaggle/input/ednet-kt1-v2"
   canonical_dir: "/kaggle/working/data/canonical"
   shards_dir: "/kaggle/working/data/shards"
   max_history_len: 200

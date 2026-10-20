@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from .action_space import PEDAGOGICAL_ACTIONS, DEFAULT_DURATIONS_MINUTES
 
 class DiscreteQNetwork(nn.Module):
@@ -55,9 +55,12 @@ class DiscreteCQL:
         self,
         state: np.ndarray,
         valid_mask: List[int],
-        deterministic: bool = True
+        deterministic: bool = True,
+        temperature: float = 0.5,
+        repetition_action_idx: Optional[int] = None,
+        repetition_penalty: float = 0.5
     ) -> Tuple[int, str]:
-        """Chooses best pedagogical action satisfying valid mask."""
+        """Chooses pedagogical action satisfying valid mask with optional repetition regularizer."""
         self.q_net.eval()
         with torch.no_grad():
             s_t = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
@@ -69,13 +72,25 @@ class DiscreteCQL:
             if m == 0:
                 masked_q[i] = -1e9
 
+        # Apply pedagogical repetition discount
+        if repetition_action_idx is not None and 0 <= repetition_action_idx < len(masked_q):
+            if valid_mask[repetition_action_idx] == 1:
+                masked_q[repetition_action_idx] -= repetition_penalty
+
         if deterministic:
             best_idx = int(np.argmax(masked_q))
         else:
-            # Softmax over valid actions
-            exp_q = np.exp(masked_q - np.max(masked_q))
-            probs = exp_q / np.sum(exp_q)
-            best_idx = int(np.random.choice(len(probs), p=probs))
+            scaled_q = (masked_q - np.max(masked_q)) / max(1e-4, temperature)
+            exp_q = np.exp(scaled_q)
+            for i, m in enumerate(valid_mask):
+                if m == 0:
+                    exp_q[i] = 0.0
+            sum_exp = np.sum(exp_q)
+            if sum_exp > 0:
+                probs = exp_q / sum_exp
+                best_idx = int(np.random.choice(len(probs), p=probs))
+            else:
+                best_idx = int(np.argmax(masked_q))
 
         return best_idx, PEDAGOGICAL_ACTIONS[best_idx]
 

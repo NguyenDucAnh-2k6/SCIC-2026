@@ -9,5 +9,5 @@ __pycache__/
 *.out
 *.toc
 # Artifacts
-*.pt
 *.parquet
+data/*

@@ -76,3 +76,54 @@ class TransitionRecord(BaseModel):
     truncated: bool = False
     data_origin: ProvenanceEnum = ProvenanceEnum.SIMULATED
     simulator_version: Optional[str] = "classtwin_sim_v1"
+
+class DatasetRoleEnum(str, Enum):
+    EDNET_KT1_FOUNDATION = "ednet_kt1_foundation"         # Knowledge Tracing representation & response dynamics
+    EDNET_KT2_KT3_ATTENTION = "ednet_kt2_kt3_attention"   # Video/lecture consumption & attention decay
+    EDNET_KT4_FATIGUE = "ednet_kt4_fatigue"               # Session fatigue & cognitive break dynamics
+    ASSISTMENTS_CLASSROOM = "assistments_classroom"       # Real teacher-class cohorts, hints & scaffolding
+
+class AssistmentsRecord(BaseModel):
+    order_id: int
+    assignment_id: int
+    user_id: int
+    assistment_id: Optional[int] = None
+    problem_id: int
+    original: Optional[int] = 1
+    correct: int = Field(description="1: correct on first attempt, 0: incorrect")
+    attempt_count: int = Field(default=1, description="Number of attempts on this problem")
+    ms_first_response: Optional[int] = Field(default=None, description="Latency to first response in ms")
+    tutor_mode: Optional[str] = None
+    answer_type: Optional[str] = None
+    sequence_id: Optional[int] = None
+    student_class_id: int = Field(description="Classroom cohort identifier")
+    position: Optional[int] = None
+    type: Optional[str] = None
+    base_sequence_id: Optional[int] = None
+    skill_id: Optional[int] = None
+    skill_name: Optional[str] = None
+    teacher_id: int = Field(description="Teacher responsible for the cohort")
+    school_id: Optional[int] = None
+    hint_count: int = Field(default=0, description="Number of hints requested by student")
+    hint_total: Optional[int] = 0
+    overlap_time: Optional[int] = None
+    template_id: Optional[int] = None
+    answer_id: Optional[int] = None
+    answer_text: Optional[str] = None
+    first_action: Optional[int] = None
+    bottom_hint: Optional[int] = None
+    opportunity: Optional[int] = None
+    opportunity_original: Optional[int] = None
+
+class ClassroomCohort(BaseModel):
+    class_id: int
+    teacher_id: int
+    student_ids: List[int] = Field(default_factory=list)
+    student_count: int
+    skill_ids: List[int] = Field(default_factory=list)
+    skill_names: List[str] = Field(default_factory=list)
+    total_attempts: int = 0
+    mean_first_attempt_accuracy: float = 0.0
+    mean_hints_per_problem: float = 0.0
+    mean_response_time_ms: float = 0.0
+

@@ -7,7 +7,7 @@ class RuleBasedPolicy:
     Standard pedagogical rule-based / heuristic policy baseline.
     Decides actions based on transparent pedagogical criteria.
     """
-    def __init__(self, fatigue_threshold: float = 0.60, weak_ratio_threshold: float = 0.30):
+    def __init__(self, fatigue_threshold: float = 0.45, weak_ratio_threshold: float = 0.30):
         self.fatigue_threshold = fatigue_threshold
         self.weak_ratio_threshold = weak_ratio_threshold
 
@@ -21,8 +21,8 @@ class RuleBasedPolicy:
         mean_mastery = state_dict.get("mean_mastery", 0.5)
 
         # Priority 1: High cognitive fatigue -> Break
-        if mean_fatigue > self.fatigue_threshold and valid_mask[4] == 1:
-            return "break", f"Mức độ mệt mỏi nhận thức cao ({mean_fatigue:.1%}). Đề xuất giải lao 3 phút."
+        if mean_fatigue > self.fatigue_threshold and (valid_mask[4] == 1 or mean_fatigue > 0.60):
+            return "break", f"Mức độ mệt mỏi nhận thức cao ({mean_fatigue:.1%}). Đề xuất giải lao 5 phút để tái tạo năng lượng."
 
         # Priority 2: Struggling students ratio high -> Discussion / Review
         if rho_low > self.weak_ratio_threshold and valid_mask[3] == 1:

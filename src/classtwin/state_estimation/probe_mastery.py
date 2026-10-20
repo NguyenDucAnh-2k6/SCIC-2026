@@ -27,18 +27,16 @@ def compute_probe_mastery(
 
     model.eval()
     with torch.no_grad():
-        # Last hidden state projection
         h_last = hidden_state[-1]  # [1, d_hidden]
-        logits = model.out_proj(h_last).squeeze(0)  # [num_questions + 1]
-        probs = torch.sigmoid(logits).cpu().numpy()
+        # Fast sliced projection: chỉ nhân chiếu lên tập probe_indices thay vì toàn bộ 12,280 chiều
+        w_sub = model.out_proj.weight[probe_indices]
+        b_sub = model.out_proj.bias[probe_indices]
+        logits_sub = torch.matmul(h_last, w_sub.t()) + b_sub
+        probs = torch.sigmoid(logits_sub).squeeze(0).cpu().numpy()
 
-    probe_probs = [float(probs[idx]) for idx in probe_indices if idx < len(probs)]
-    if not probe_probs:
-        return 0.5, 1.0
-
-    mastery = float(np.mean(probe_probs))
+    mastery = float(np.mean(probs))
     sample_uncertainty = 1.0 / np.sqrt(1.0 + max(0, n_observed))
-    probe_variance = float(np.var(probe_probs))
+    probe_variance = float(np.var(probs))
     total_uncertainty = float(sample_uncertainty + probe_variance)
 
     return mastery, total_uncertainty

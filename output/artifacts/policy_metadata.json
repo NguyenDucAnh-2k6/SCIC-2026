@@ -1,5 +1,6 @@
 {
-  "policy_type": "Discrete-CQL",
+  "policy_type": "Discrete-CQL-EXPLICIT",
+  "reward_mode": "explicit",
   "d_state": 12,
   "actions": [
     "lecture",
@@ -10,7 +11,17 @@
   ],
   "cql_alpha": 1.0,
   "gamma_base": 0.99,
-  "workload_budget": 10.0,
-  "final_loss": 1.3764581680297852,
-  "checkpoint_sha256": "b9509ddc9b8c8d9dd60cfc94ce0cc2d5c0f78ec0e175e2d923691c6f9ad528b1"
+  "workload_budget": 15.0,
+  "final_loss": 3.231916904449463,
+  "action_entropy": 2.261,
+  "normalized_entropy": 0.974,
+  "mode_collapse": false,
+  "action_distribution": {
+    "lecture": "26.4%",
+    "quiz": "22.6%",
+    "groupwork": "24.5%",
+    "discussion": "12.7%",
+    "break": "13.7%"
+  },
+  "checkpoint_sha256": "b61d87339ba794288048c13849694e410f0b08e97873797b4725ea0bee04827b"
 }

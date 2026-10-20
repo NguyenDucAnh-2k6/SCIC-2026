@@ -41,9 +41,11 @@ class PolicyConfig(BaseModel):
     polyak_tau: float = 0.005
 
 class TwinConfig(BaseModel):
-    default_cohort_size: int = 60
+    default_cohort_size: int = 53
     episode_duration_minutes: int = 60
     mc_rollout_samples: int = 20
+    use_real_data: bool = True
+    class_id: Optional[int] = 12262
     scenarios: list[str] = ["neutral", "high_engagement", "fatigue_prone"]
 
 class ClassTwinConfig(BaseModel):

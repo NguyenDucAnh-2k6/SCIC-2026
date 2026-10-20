@@ -236,12 +236,71 @@ def run_stage_estimator(
     logger.info(f"Stage 2 Complete. Estimator saved to {model_path}")
     return model_path, metadata
 
-def run_stage_policy(cfg, output_dir: Path, episodes: int = 25, train_steps: int = 50) -> Tuple[Path, Dict[str, Any]]:
-    logger.info("=== STAGE 3: DIGITAL TWIN SIMULATION & OFFLINE RL POLICY (CQL) ===")
+def run_stage_policy(cfg, output_dir: Path, episodes: int = 25, train_steps: int = 50, reward_mode: str = "explicit") -> Tuple[Path, Dict[str, Any]]:
+    logger.info(f"=== STAGE 3: DIGITAL TWIN SIMULATION & OFFLINE RL POLICY (CQL - {reward_mode.upper()}) ===")
     models_dir = output_dir / "models"
     artifacts_dir = output_dir / "artifacts"
+    models_dir.mkdir(parents=True, exist_ok=True)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    env = ClassroomDigitalTwinEnv(cohort_size=cfg.twin.default_cohort_size, seed=42)
+    use_real = getattr(cfg.twin, "use_real_data", True)
+    cid = getattr(cfg.twin, "class_id", 12262)
+    dkt_ckpt = models_dir / "gru_dkt.pt"
+    env = ClassroomDigitalTwinEnv(
+        cohort_size=cfg.twin.default_cohort_size,
+        use_real_data=use_real,
+        class_id=cid,
+        seed=42,
+        dkt_model_path=dkt_ckpt if dkt_ckpt.exists() else None,
+        reward_mode=reward_mode
+    )
+    if env.dkt_model is not None:
+        logger.info(f"Connected trained GRU-DKT model ({dkt_ckpt}) into ClassroomDigitalTwinEnv for Neural State Estimation.")
+
+    # Optional IRL Latent Reward Optimization
+    irl_optimizer = None
+    if reward_mode == "irl":
+        logger.info("Reward Mode IRL: Generating stochastic expert pedagogical demonstration trajectories...")
+        from src.classtwin.policies.irl import MaximumEntropyIRL, generate_expert_demonstrations
+        exp_s, exp_a = generate_expert_demonstrations(env, num_episodes=20)
+        logger.info(f"Generated {len(exp_s)} expert state-action pairs using multi-criteria pedagogical utility.")
+
+        sim_s, sim_a = [], []
+        for _ in range(15):
+            st = env.reset()
+            d = False
+            while not d:
+                act = np.random.choice(PEDAGOGICAL_ACTIONS)
+                dur = DEFAULT_DURATIONS_MINUTES[act]
+                sim_s.append(st)
+                sim_a.append(PEDAGOGICAL_ACTIONS.index(act))
+                st, _, d, _ = env.step(act, duration_minutes=dur)
+
+        irl_optimizer = MaximumEntropyIRL(d_state=cfg.policy.d_state, num_actions=len(PEDAGOGICAL_ACTIONS), lr=1e-3)
+        exp_s_t = torch.tensor(exp_s, dtype=torch.float32)
+        exp_a_t = torch.tensor(exp_a, dtype=torch.long)
+        sim_s_t = torch.tensor(np.array(sim_s), dtype=torch.float32)
+        sim_a_t = torch.tensor(np.array(sim_a), dtype=torch.long)
+
+        logger.info("Optimizing Latent Reward Net R_psi(s, a) via Maximum Entropy...")
+        bs_irl = min(64, len(exp_s), len(sim_s))
+        for step in range(120):
+            idx_e = np.random.choice(len(exp_s), size=bs_irl, replace=False)
+            idx_s = np.random.choice(len(sim_s), size=bs_irl, replace=False)
+            irl_optimizer.train_step(
+                expert_states=exp_s_t[idx_e],
+                expert_actions=exp_a_t[idx_e],
+                simulated_states=sim_s_t[idx_s],
+                simulated_actions=sim_a_t[idx_s]
+            )
+
+        irl_save_path = models_dir / "latent_reward_net.pt"
+        irl_optimizer.save(irl_save_path)
+        logger.info(f"Learned Latent Reward Net saved to {irl_save_path}")
+        env.latent_reward_net = irl_optimizer
+    else:
+        logger.info("Reward Mode EXPLICIT: Utilizing balanced multi-objective reward with monotony & break penalties.")
+
     cql = DiscreteCQL(
         d_state=env.get_state_vector().shape[0],
         num_actions=len(PEDAGOGICAL_ACTIONS),
@@ -250,34 +309,45 @@ def run_stage_policy(cfg, output_dir: Path, episodes: int = 25, train_steps: int
         cql_alpha=cfg.policy.cql_alpha
     )
 
-    logger.info(f"Simulating {episodes} classroom sessions to populate transition dataset...")
+    logger.info(f"Simulating {episodes} classroom sessions to populate transition dataset (anti-mode-collapse sampling)...")
     buffer_s, buffer_a, buffer_r, buffer_next_s, buffer_dur, buffer_done, buffer_mask = [], [], [], [], [], [], []
 
     rule_policy = RuleBasedPolicy()
     for ep in range(episodes):
         state = env.reset()
         done = False
+        last_action_name = None
         while not done:
             rem_time = max(0.0, env.episode_duration_minutes - env.time_elapsed_minutes)
-            mask = get_valid_action_mask(rem_time, env.cumulative_workload, cfg.policy.workload_budget)
+            mask = get_valid_action_mask(rem_time, env.cumulative_workload)
 
-            # Heuristic behavior policy with random exploration
-            if np.random.rand() < 0.3:
+            # High-entropy exploratory mixture: 50% uniform valid exploration, 50% rule-based
+            if np.random.rand() < 0.50:
                 valid_idxs = [i for i, m in enumerate(mask) if m == 1]
                 act_idx = np.random.choice(valid_idxs)
                 act_name = PEDAGOGICAL_ACTIONS[act_idx]
             else:
                 act_name, _ = rule_policy.select_action(
-                    {"mean_mastery": float(state[0]), "mean_fatigue": float(state[6])},
+                    {"mean_mastery": float(state[0]), "mean_fatigue": float(state[6]), "rho_low": float(state[2]), "mean_attention": float(state[5])},
                     mask
                 )
-                act_idx = PEDAGOGICAL_ACTIONS.index(act_name)
+                # Anti-monotony heuristic during rollout: if rule picks same action twice and alternative exists, explore alternative
+                if act_name == last_action_name and np.random.rand() < 0.60:
+                    other_valid = [i for i, m in enumerate(mask) if m == 1 and PEDAGOGICAL_ACTIONS[i] != act_name]
+                    if other_valid:
+                        act_idx = np.random.choice(other_valid)
+                        act_name = PEDAGOGICAL_ACTIONS[act_idx]
+                    else:
+                        act_idx = PEDAGOGICAL_ACTIONS.index(act_name)
+                else:
+                    act_idx = PEDAGOGICAL_ACTIONS.index(act_name)
 
+            last_action_name = act_name
             dur_m = DEFAULT_DURATIONS_MINUTES[act_name]
             next_state, reward, done, _ = env.step(act_name, duration_minutes=dur_m)
 
             next_rem_time = max(0.0, env.episode_duration_minutes - env.time_elapsed_minutes)
-            next_mask = get_valid_action_mask(next_rem_time, env.cumulative_workload, cfg.policy.workload_budget)
+            next_mask = get_valid_action_mask(next_rem_time, env.cumulative_workload)
 
             buffer_s.append(state)
             buffer_a.append(act_idx)
@@ -316,17 +386,60 @@ def run_stage_policy(cfg, output_dir: Path, episodes: int = 25, train_steps: int
         if (step + 1) % 10 == 0:
             logger.info(f"CQL Step {step + 1}/{train_steps} | Loss: {final_metrics['total_loss']:.4f} | Bellman: {final_metrics['bellman_loss']:.4f}")
 
-    policy_path = models_dir / "cql_policy.pt"
+    save_filename = "irl_cql_policy.pt" if reward_mode == "irl" else "cql_policy.pt"
+    policy_path = models_dir / save_filename
     torch.save(cql.q_net.state_dict(), policy_path)
+    logger.info(f"Policy checkpoint saved successfully to {policy_path}")
+
+    # Post-training diagnostic check for Action Diversity & Mode Collapse
+    logger.info("Conducting post-training policy health check (Action Entropy & Mode Collapse diagnostics)...")
+    diag_actions = {a: 0 for a in PEDAGOGICAL_ACTIONS}
+    for _ in range(5):
+        eval_st = env.reset()
+        eval_done = False
+        last_eval_act_idx = None
+        while not eval_done:
+            r_t = max(0.0, env.episode_duration_minutes - env.time_elapsed_minutes)
+            m_t = get_valid_action_mask(r_t, env.cumulative_workload)
+            eval_idx, eval_act = cql.select_action(
+                eval_st, m_t,
+                deterministic=False,
+                temperature=0.35,
+                repetition_action_idx=last_eval_act_idx,
+                repetition_penalty=1.2
+            )
+            diag_actions[eval_act] += 1
+            last_eval_act_idx = eval_idx
+            d_min = DEFAULT_DURATIONS_MINUTES[eval_act]
+            eval_st, _, eval_done, _ = env.step(eval_act, duration_minutes=d_min)
+
+    total_diag_steps = sum(diag_actions.values())
+    probs = [c / total_diag_steps for c in diag_actions.values() if c > 0]
+    action_entropy = -float(np.sum(probs * np.log2(probs))) if probs else 0.0
+    max_entropy = float(np.log2(len(PEDAGOGICAL_ACTIONS)))
+    norm_entropy = action_entropy / max_entropy if max_entropy > 0 else 0.0
+    mode_collapse_flag = norm_entropy < 0.40
+
+    dist_str = ", ".join(f"{k}: {v/total_diag_steps*100:.1f}%" for k, v in diag_actions.items())
+    logger.info(f"Diagnostic Action Distribution (5 eps): [{dist_str}]")
+    logger.info(
+        f"Shannon Entropy: {action_entropy:.3f}/{max_entropy:.3f} ({norm_entropy*100:.1f}%) | "
+        f"Mode Collapse Status: {'[WARNING] LIKELY COLLAPSE' if mode_collapse_flag else '[HEALTHY] BALANCED POLICY'}"
+    )
 
     metadata = {
-        "policy_type": "Discrete-CQL",
+        "policy_type": f"Discrete-CQL-{reward_mode.upper()}",
+        "reward_mode": reward_mode,
         "d_state": env.get_state_vector().shape[0],
         "actions": PEDAGOGICAL_ACTIONS,
         "cql_alpha": cfg.policy.cql_alpha,
         "gamma_base": cfg.policy.gamma_base,
         "workload_budget": cfg.policy.workload_budget,
         "final_loss": final_metrics.get("total_loss", 0.0),
+        "action_entropy": round(action_entropy, 3),
+        "normalized_entropy": round(norm_entropy, 3),
+        "mode_collapse": mode_collapse_flag,
+        "action_distribution": {k: f"{v/total_diag_steps*100:.1f}%" for k, v in diag_actions.items()},
         "checkpoint_sha256": compute_file_sha256(policy_path)
     }
     with open(artifacts_dir / "policy_metadata.json", "w", encoding="utf-8") as f:
@@ -359,7 +472,7 @@ def run_stage_release_manifest(output_dir: Path, est_meta: Dict[str, Any], pol_m
 
 def main():
     parser = argparse.ArgumentParser(description="ClassTwin Unified Pipeline: Preprocess + State Estimator + CQL Policy")
-    parser.add_argument("--config", type=str, default="configs/preprocess.yaml", help="Path to config file.")
+    parser.add_argument("--config", type=str, default="configs/pipeline.yaml", help="Path to config file.")
     parser.add_argument("--output-dir", type=str, default="output", help="Root directory for models and artifacts.")
     parser.add_argument("--max-members", type=int, default=None, help="Max members to preprocess (default None = all).")
     parser.add_argument("--num-shards", type=int, default=20, help="Number of Parquet shards to train on (default 20 for fast training, set -1 for all).")
@@ -372,6 +485,8 @@ def main():
     parser.add_argument("--estimator-epochs", type=int, default=None, help="Number of epochs for GRU-DKT (overrides config).")
     parser.add_argument("--policy-episodes", type=int, default=20, help="Episodes to simulate for CQL.")
     parser.add_argument("--policy-steps", type=int, default=50, help="Gradient steps for CQL.")
+    parser.add_argument("--reward-mode", type=str, choices=["explicit", "irl"], default="explicit", help="Reward formulation: 'explicit' (multi-objective penalties) or 'irl' (MaxEnt Latent Reward).")
+    parser.add_argument("--use-synthetic-twin", action="store_true", help="Use synthetic Beta distribution instead of real multi-source data.")
     args = parser.parse_args()
 
     set_seed(42)
@@ -422,7 +537,15 @@ def main():
     # Stage 3: Policy
     pol_meta = {}
     if not args.skip_policy:
-        _, pol_meta = run_stage_policy(cfg, output_path, episodes=args.policy_episodes, train_steps=args.policy_steps)
+        if args.use_synthetic_twin:
+            cfg.twin.use_real_data = False
+        _, pol_meta = run_stage_policy(
+            cfg,
+            output_path,
+            episodes=args.policy_episodes,
+            train_steps=args.policy_steps,
+            reward_mode=args.reward_mode
+        )
 
     # Stage 4: Package Release
     manifest_p = run_stage_release_manifest(output_path, est_meta, pol_meta)
