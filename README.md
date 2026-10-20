@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <!-- Backend & Core ML -->
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.10+"/></a>
   <a href="https://pytorch.org/"><img src="https://img.shields.io/badge/PyTorch-2.12.0%2B-EE4C2C?style=flat&logo=pytorch&logoColor=white" alt="PyTorch"/></a>
   <a href="https://numpy.org/"><img src="https://img.shields.io/badge/NumPy-2.3.5-013243?style=flat&logo=numpy&logoColor=white" alt="NumPy"/></a>
@@ -17,6 +18,11 @@
   <a href="https://scikit-learn.org/"><img src="https://img.shields.io/badge/Scikit--Learn-1.6.1-F7931E?style=flat&logo=scikitlearn&logoColor=white" alt="Scikit-Learn"/></a>
   <a href="https://scipy.org/"><img src="https://img.shields.io/badge/SciPy-1.16.3-8CAAE6?style=flat&logo=scipy&logoColor=white" alt="SciPy"/></a>
   <a href="https://www.kaggle.com/"><img src="https://img.shields.io/badge/Kaggle-GPU%20Ready-20BEFF?style=flat&logo=kaggle&logoColor=white" alt="Kaggle"/></a>
+  <!-- Frontend UI & Web Dashboard -->
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.x-61DAFB?style=flat&logo=react&logoColor=black" alt="React 19"/></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8.x-646CFF?style=flat&logo=vite&logoColor=white" alt="Vite"/></a>
+  <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"><img src="https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?style=flat&logo=javascript&logoColor=black" alt="JavaScript ES2023"/></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat&logo=nodedotjs&logoColor=white" alt="Node.js"/></a>
 </p>
 
 ---
@@ -33,6 +39,42 @@
 * **Classroom Digital Twin Simulator:** Giả lập động lực học lớp học ảo (40–100 người) cho phép chạy hàng nghìn kịch bản phản thực (*counterfactual rollouts*).
 * **Discrete Conservative Q-Learning (CQL):** Tối ưu hóa chính sách sư phạm với chiết khấu Bán Markov $\gamma(\Delta t) = \gamma_{base}^{\Delta t / \tau_0}$ cùng ràng buộc trần khối lượng công việc của giảng viên (*Workload Budget*) và bảo vệ nhóm sinh viên yếu (*Fairness Constraint*).
 * **Privacy-First (Tuyệt đối phi-camera):** Không nhận diện khuôn mặt, không ghi âm định danh. Toàn bộ dữ liệu dựa trên hành vi bài tập số và cảm biến vi khí hậu môi trường ($\text{CO}_2$, nhiệt độ, độ ồn).
+
+---
+
+## 💾 Dữ liệu Thực nghiệm & Tải về (Google Drive)
+
+Toàn bộ dữ liệu thực địa đa nguồn của dự án (bao gồm `EdNet`, `ASSISTments`, `SocioPatterns`, `In-Gauge / En-Gage`, `OULAD`, `Bridge to Algebra`) được lưu trữ tập trung tại liên kết Google Drive chính thức:
+
+<p align="center">
+  <a href="https://drive.google.com/drive/folders/1kUhHPoQuXi-qhQR8K59SuRW_6PnX_teB?usp=sharing">
+    <img src="https://img.shields.io/badge/Google_Drive-Tải_Dữ_Liệu_ClassTwin_Tại_Đây-34A853?style=for-the-badge&logo=googledrive&logoColor=white" alt="Google Drive Datasets"/>
+  </a>
+</p>
+
+🔗 **Đường dẫn truy cập:** [Google Drive - Thư mục Dữ liệu ClassTwin](https://drive.google.com/drive/folders/1kUhHPoQuXi-qhQR8K59SuRW_6PnX_teB?usp=sharing)
+
+### ⚠️ Hướng dẫn Sắp xếp & Giải nén Dữ liệu Bắt buộc:
+Sau khi tải các tệp từ Drive về, hãy đặt toàn bộ vào thư mục `data/` trong thư mục gốc của dự án theo cấu trúc sau:
+
+```
+data/
+├── EdNet-KT1.zip                <-- GIỮ NGUYÊN FILE .ZIP (TUYỆT ĐỐI KHÔNG GIẢI NÉN)
+├── EdNet-KT2.zip                <-- GIỮ NGUYÊN FILE .ZIP (TUYỆT ĐỐI KHÔNG GIẢI NÉN)
+├── EdNet-KT3.zip                <-- GIỮ NGUYÊN FILE .ZIP (TUYỆT ĐỐI KHÔNG GIẢI NÉN)
+├── EdNet-KT4.zip                <-- GIỮ NGUYÊN FILE .ZIP (TUYỆT ĐỐI KHÔNG GIẢI NÉN)
+├── assistments/                 <-- GIẢI NÉN TOÀN BỘ FILE ZIP BÊN TRONG RA THƯ MỤC NÀY
+├── assistments_affect/          <-- GIẢI NÉN TOÀN BỘ FILE ZIP BÊN TRONG RA THƯ MỤC NÀY
+├── in_gauge_engage/             <-- GIẢI NÉN FILE in_gauge_engage.zip RA THƯ MỤC NÀY
+├── sociopatterns/               <-- GIẢI NÉN TOÀN BỘ FILE .CSV.GZ / ZIP BÊN TRONG
+├── bridge_to_algebra_2006_2007/ <-- GIẢI NÉN TOÀN BỘ FILE ZIP BÊN TRONG RA THƯ MỤC NÀY
+└── oulad/                       <-- GIẢI NÉN TOÀN BỘ FILE ZIP BÊN TRONG RA THƯ MỤC NÀY
+```
+
+> [!IMPORTANT]
+> **Quy tắc giải nén quan trọng cần lưu ý:**
+> 1. **GIỮ NGUYÊN ĐỊNH DẠNG `.zip` ĐỐI VỚI CÁC TỆP `EdNet-*.zip`** (`EdNet-KT1.zip`, `EdNet-KT2.zip`, ...): Module tiền xử lý `StreamingZipReader` của ClassTwin được thiết kế để đọc và trích xuất dữ liệu trực tiếp từ file zip qua luồng stream trong RAM, **không cần giải nén ra đĩa**, giúp tiết kiệm hơn 15 GB dung lượng ổ cứng.
+> 2. **GIẢI NÉN TẤT CẢ CÁC TỆP NÉN CÒN LẠI**: Các tệp nén của `in_gauge_engage.zip`, `assistments`, `sociopatterns`, `oulad`, v.v. cần được giải nén ra các tệp `.csv` / `.tsv` trong thư mục con tương ứng để [MultiSourceDataManager](file:///d:/SCIC%202026/SCIC-2026/src/classtwin/data/multisource.py) có thể nạp trực tiếp vào môi trường Digital Twin.
 
 ---
 
@@ -211,7 +253,7 @@ print('13/13 tests passed!')
 "
 ```
 
-### Khởi chạy Server API Hỗ trợ Quyết định (FastAPI)
+### Khởi chạy Server API Hỗ trợ Quyết định (FastAPI Backend)
 ```bash
 python scripts/run_api.py
 ```
@@ -224,11 +266,25 @@ Các API endpoints sẵn sàng phục vụ giảng đường:
 * `POST /v1/teacher-decisions`: Ghi nhận quyết định phê duyệt/tùy biến của giảng viên (Human-in-the-Loop).
 * `POST /v1/simulations`: Chạy mô phỏng phản thực Monte-Carlo cho danh sách hành động ứng viên.
 
+### Khởi chạy Dashboard Giảng đường Thời gian thực (Frontend React + Vite Cockpit)
+Giao diện buồng lái kỹ thuật số hỗ trợ giảng viên theo dõi bản sao số lớp học trực quan:
+```bash
+# 1. Di chuyển vào thư mục frontend
+cd frontend
+
+# 2. Cài đặt các gói phụ thuộc
+npm install
+
+# 3. Khởi chạy máy chủ phát triển
+npm run dev
+```
+Truy cập bảng điều khiển Digital Twin tại: [http://localhost:5173](http://localhost:5173) (tự động kết nối trực tiếp với backend tại `http://localhost:8000`).
+
 ---
 
 ## 📄 Tài liệu Đề án (LaTeX & PDF)
 
-* **Bản thảo Đề án Toàn diện (19 trang):** [docs/ClassTwin_Proposal_SCIC2026.pdf](file:///d:/SCIC%202026/SCIC-2026/docs/ClassTwin_Proposal_SCIC2026.pdf)
+* **Bản thảo Đề án Toàn diện (29 trang):** [docs/ClassTwin_Proposal_SCIC2026.pdf](file:///d:/SCIC%202026/SCIC-2026/docs/ClassTwin_Proposal_SCIC2026.pdf)
 * **Mã nguồn LaTeX:** [docs/ClassTwin_Proposal_SCIC2026.tex](file:///d:/SCIC%202026/SCIC-2026/docs/ClassTwin_Proposal_SCIC2026.tex)
 * **Đặc tả Thiết kế Kỹ thuật:** [docs/build_technical_design.py](file:///d:/SCIC%202026/SCIC-2026/docs/build_technical_design.py)
 
