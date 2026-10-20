@@ -191,31 +191,16 @@ print('13/13 tests passed!')
 
 ### Khởi chạy Server API Hỗ trợ Quyết định (FastAPI Backend)
 ```bash
-python scripts/run_api.py
+python scripts/run_api.py --dev
 ```
 Truy cập tài liệu Swagger UI tương tác tại: [http://localhost:8000/docs](http://localhost:8000/docs)
-
+Lệnh này tự động mở giao diện UI React ở [http://localhost:3000](http://localhost:3000).
 Các API endpoints sẵn sàng phục vụ giảng đường:
 * `POST /v1/events:batch`: Tiếp nhận luồng sự kiện tương tác của sinh viên.
 * `GET /v1/classes/{class_id}/state`: Lấy snapshot trạng thái tổng hợp của lớp học (độ trễ $< 1\text{s}$).
 * `POST /v1/recommendations`: Nhận gợi ý can thiệp sư phạm tối ưu kèm giải thích và kịch bản mô phỏng What-if.
 * `POST /v1/teacher-decisions`: Ghi nhận quyết định phê duyệt/tùy biến của giảng viên (Human-in-the-Loop).
-* `POST /v1/simulations`: Chạy mô phỏng phản thực Monte-Carlo cho danh sách hành động ứng viên.
-
-### Khởi chạy Dashboard Giảng đường Thời gian thực (Frontend React + Vite Cockpit)
-Giao diện buồng lái kỹ thuật số hỗ trợ giảng viên theo dõi bản sao số lớp học trực quan:
-```bash
-# 1. Di chuyển vào thư mục frontend
-cd frontend
-
-# 2. Cài đặt các gói phụ thuộc
-npm install
-
-# 3. Khởi chạy máy chủ phát triển
-npm run dev
-```
-Truy cập bảng điều khiển Digital Twin tại: [http://localhost:5173](http://localhost:5173) (tự động kết nối trực tiếp với backend tại `http://localhost:8000`).
-
+* `POST /v1/simulations`: Chạy mô phỏng phản thực Monte-Carlo cho danh sách hành động ứng viên. <br>
 ---
 
 ## 📄 Tài liệu Đề án (LaTeX & PDF)
