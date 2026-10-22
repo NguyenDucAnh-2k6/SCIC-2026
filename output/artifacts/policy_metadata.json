@@ -12,16 +12,16 @@
   "cql_alpha": 1.0,
   "gamma_base": 0.99,
   "workload_budget": 15.0,
-  "final_loss": 3.231916904449463,
-  "action_entropy": 2.261,
-  "normalized_entropy": 0.974,
+  "final_loss": 2.7362143993377686,
+  "action_entropy": 2.248,
+  "normalized_entropy": 0.968,
   "mode_collapse": false,
   "action_distribution": {
-    "lecture": "26.4%",
-    "quiz": "22.6%",
-    "groupwork": "24.5%",
-    "discussion": "12.7%",
-    "break": "13.7%"
+    "lecture": "16.2%",
+    "quiz": "17.1%",
+    "groupwork": "31.9%",
+    "discussion": "13.0%",
+    "break": "21.8%"
   },
-  "checkpoint_sha256": "b61d87339ba794288048c13849694e410f0b08e97873797b4725ea0bee04827b"
+  "checkpoint_sha256": "03c40d061a185fd78db04fb2c5344d6cd3712b62af53e6d3a55265356d009ab1"
 }

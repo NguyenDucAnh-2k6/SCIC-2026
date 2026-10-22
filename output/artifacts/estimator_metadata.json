@@ -2,9 +2,9 @@
   "model_type": "GRU-DKT",
   "d_model": 64,
   "d_hidden": 128,
-  "num_questions": 12280,
-  "epochs": 5,
-  "ece": 0.014487656111280282,
-  "brier_score": 0.21667972438113392,
-  "checkpoint_sha256": "794e31bd3f0081e71f812b1e1d5b21165248b03ccf31abf2549dcd97b28570ec"
+  "num_questions": 10651,
+  "epochs": 1,
+  "ece": 0.15970876964472108,
+  "brier_score": 0.26151175595604176,
+  "checkpoint_sha256": "8455e4c497929ac27bc4c79ae62e8483bfce373b4f4a07a6c8e4c90f62e8c021"
 }
