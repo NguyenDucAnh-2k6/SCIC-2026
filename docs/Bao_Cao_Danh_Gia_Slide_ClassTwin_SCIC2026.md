@@ -177,24 +177,3 @@ Cấu trúc 20 slide tối ưu, phân bổ cân đối giữa **Khoa học Công
 * **Slide 20: Kêu gọi Hợp tác & Thông điệp Kết thúc (The Ask & Call to Action)**
   * *Nội dung:* Kêu gọi 300 triệu VNĐ tài trợ sản xuất 50 bộ IoT Kit; QR Code truy cập Demo & Website; Thông tin liên hệ đội TeacherAid.
 
----
-
-## 5. TÀI NGUYÊN ĐỒ HỌA CÓ SẴN & CHECKLIST PHÂN CÔNG TEAM
-
-### 5.1. Các Tệp Ảnh Đã Xuất Sẵn (Dùng Được Ngay)
-Các tệp ảnh PNG chuẩn 16:9 chất lượng cao đã nằm sẵn trong thư mục dự án `d:\SCIC 2026\`:
-1. [cql_concept_diagram.png](file:///d:/SCIC%202026/cql_concept_diagram.png): Dán trực tiếp vào **Slide 9 (Thuật toán CQL)**.
-2. [classtwin_system_architecture.png](file:///d:/SCIC%202026/classtwin_system_architecture.png): Dán trực tiếp vào **Slide 10 (Kiến trúc Hệ thống)**.
-3. [cql_classtwin_3d_concept.png](file:///d:/SCIC%202026/cql_classtwin_3d_concept.png): Dán làm ảnh nền hoặc ảnh Hero cho **Slide 1 (Bìa) hoặc Slide 5 (Tổng quan)**.
-
-### 5.2. Checklist Phân công Thành viên Team
-
-| Thành viên | Nhiệm vụ cụ thể cần hoàn thành | Thời hạn |
-| :--- | :--- | :--- |
-| **Nhóm Kỹ thuật / AI** | 1. Xuất số liệu AUC thực tế của mô hình DKT và chỉ số hội tụ reward của CQL để đưa vào Slide 12.<br/>2. Kiểm tra lại thông số phần cứng IoT Kit (loại chip NDIR, băng tần BLE) để hoàn thiện Slide 10. | Trước 24/10 |
-| **Nhóm Frontend / UI** | 1. Chạy `frontend` (React 19 + Vite), chụp 3 màn hình độ phân giải cao (Bản đồ nhiệt chỗ ngồi 3D, thanh đo Cognitive Fatigue, pop-up gợi ý 1-chạm).<br/>2. Cắt một đoạn gif/video ngắn 30s từ `demo_v1.mp4` chèn vào Slide 8. | Trước 24/10 |
-| **Nhóm Kinh tế / GTM** | 1. Bổ sung Slide 4 (TAM - SAM - SOM) theo số liệu giáo dục ĐH Việt Nam.<br/>2. Hoàn thiện Slide 13 (Bảng ma trận đối thủ cạnh tranh) và Slide 16 (Chiến lược tiếp cận trường ĐH). | Trước 25/10 |
-| **Slide Designer / Lead** | 1. Lược bỏ Slide 15 trắng trong file PowerPoint hiện tại.<br/>2. Cập nhật Slide 2 (Team): Bổ sung ảnh thẻ chân dung, phân vai rõ rệt, thêm khối Giảng viên Cố vấn.<br/>3. Ráp toàn bộ các slide theo khung **20-Slide Blueprint** ở Mục 4. | Trước 26/10 |
-
----
-*Tài liệu được tổng hợp và lưu trữ tại `SCIC-2026/docs/` phục vụ công tác chuẩn bị chung kết cuộc thi SCIC Q4/2026.*
