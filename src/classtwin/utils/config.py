@@ -1,18 +1,20 @@
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List, Union
 import yaml
 from pydantic import BaseModel, Field
 
 class DataConfig(BaseModel):
+    data_root: str = "data"
     raw_zip_path: str = "data/EdNet-KT1.zip"
     canonical_dir: str = "data/canonical"
     shards_dir: str = "data/shards"
     max_history_len: int = 200
-    chunk_size_rows: int = 200_000
+    chunk_size_rows: int = 50_000
     train_ratio: float = 0.8
     val_ratio: float = 0.1
     test_ratio: float = 0.1
     seed: int = 42
+    datasets: Dict[str, Any] = Field(default_factory=dict)
 
 class EstimatorConfig(BaseModel):
     model_type: str = "gru_dkt"  # "bkt" or "gru_dkt"
@@ -22,31 +24,32 @@ class EstimatorConfig(BaseModel):
     dropout: float = 0.1
     learning_rate: float = 0.001
     weight_decay: float = 1e-4
-    batch_size: int = 64
-    max_epochs: int = 30
+    batch_size: int = 128
+    max_epochs: int = 5
     early_stopping_patience: int = 5
     probe_sample_size: int = 10
 
 class PolicyConfig(BaseModel):
     policy_type: str = "cql"
-    d_state: int = 12
+    d_state: int = 32
     d_hidden: int = 128
     learning_rate: float = 0.0003
-    batch_size: int = 256
+    batch_size: int = 128
     gamma_base: float = 0.99
     tau_seconds: float = 60.0
     cql_alpha: float = 1.0
-    workload_budget: float = 10.0
+    workload_budget: float = 15.0
     harm_epsilon: float = 0.05
     polyak_tau: float = 0.005
 
 class TwinConfig(BaseModel):
+    d_state: int = 32
     default_cohort_size: int = 53
     episode_duration_minutes: int = 60
-    mc_rollout_samples: int = 20
+    mc_rollout_samples: int = 30
     use_real_data: bool = True
     class_id: Optional[int] = 12262
-    scenarios: list[str] = ["neutral", "high_engagement", "fatigue_prone"]
+    scenarios: List[str] = ["neutral", "high_engagement", "fatigue_prone"]
 
 class ClassTwinConfig(BaseModel):
     data: DataConfig = Field(default_factory=DataConfig)

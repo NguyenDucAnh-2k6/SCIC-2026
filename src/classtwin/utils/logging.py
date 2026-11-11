@@ -9,7 +9,7 @@ def get_logger(name: str = "classtwin", level: int = logging.INFO) -> logging.Lo
     """Returns a standardized structured logger for ClassTwin."""
     if hasattr(sys.stdout, "reconfigure"):
         try:
-            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
         except Exception:
             pass
     logger = logging.getLogger(name)

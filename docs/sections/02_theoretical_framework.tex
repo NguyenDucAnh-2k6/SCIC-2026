@@ -1,0 +1,138 @@
+\section{Cơ sở Toán học và Công thức hóa Hệ thống}\label{sec:toan-hoc}
+
+\subsection{Ước lượng Trạng thái Người học (Learner State Estimation)}\label{subsec:state-estimation}
+Gọi sinh viên là $i \in \{1, \dots, N\}$, câu hỏi tương tác là $q \in \mathcal{Q}$, nhóm câu hỏi (bundle) là $b$, và kỹ năng/kiến thức liên kết là $k \in \mathcal{K}$. Lịch sử tương tác của sinh viên $i$ tính đến trước thời điểm làm câu hỏi $q$ được ký hiệu là:
+\begin{equation}\label{eq:history}
+  \mathcal{H}_{i, t} = \big( (q_1, y_{i,1}, \Delta \tau_1), (q_2, y_{i,2}, \Delta \tau_2), \dots, (q_t, y_{i,t}, \Delta \tau_t) \big)
+\end{equation}
+trong đó $y_{i,t} \in \{0, 1\}$ là phản hồi quan sát được (1: Đúng, 0: Sai), và $\Delta \tau_t$ là thời gian hoàn thành câu hỏi (elapsed time).
+
+\subsubsection{Mô hình Truy vết Kiến thức Sâu (Deep Knowledge Tracing - DKT)}
+Xác suất trả lời đúng của sinh viên $i$ đối với câu hỏi $q$ tại thời điểm $t+1$ được mô hình hóa qua mạng nơ-ron hồi quy GRU kết hợp ma trận nhúng nội dung và kỹ năng:
+\begin{equation}\label{eq:gru-kt}
+  \mathbf{h}_{i, t} = \text{GRU}\big(\mathbf{h}_{i, t-1}, [\mathbf{e}_q; y_{i, t}; \log(1 + \Delta \tau_t)]\big)
+\end{equation}
+\begin{equation}\label{eq:prob-correct}
+  p_{i, q} = P(y_{i, q} = 1 \mid \mathcal{H}_{i, t}, q) = \sigma\big(\mathbf{w}_q^T \mathbf{h}_{i, t} + b_q\big)
+\end{equation}
+với $\mathbf{e}_q \in \mathbb{R}^d$ là vector nhúng câu hỏi kết hợp kỹ năng, và $\sigma(z) = \frac{1}{1 + e^{-z}}$ là hàm sigmoid. Hàm mất mát tối ưu hóa cho mô hình ước lượng là Cross-Entropy có trọng số mặt nạ hợp lệ:
+\begin{equation}\label{eq:loss-kt}
+  \mathcal{L}_{KT} = - \frac{1}{N_{valid}} \sum_{i} \sum_{t} \mathbb{I}_{valid}(i,t) \cdot \big[ y_{i,t} \ln p_{i,q_t} + (1 - y_{i,t}) \ln (1 - p_{i,q_t}) \big]
+\end{equation}
+
+\subsubsection{Đo lường Mức độ Nắm vững Kiến thức Chuẩn tắc (Standardized Probe Mastery)}
+Để tránh sự sai lệch khi sinh viên làm các câu hỏi có độ khó khác nhau, ClassTwin định nghĩa mức độ nắm vững chuẩn tắc (\textit{Probe Mastery}) của sinh viên $i$ trên kỹ năng $k$ bằng kỳ vọng xác suất đúng trên một tập câu hỏi kiểm định cố định $\mathcal{P}_k$ đã được cân bằng độ khó:
+\begin{equation}\label{eq:probe-mastery}
+  m_{i, k, t} = \frac{1}{|\mathcal{P}_k|} \sum_{q^* \in \mathcal{P}_k} P(y = 1 \mid \mathcal{H}_{i, t}, q^*)
+\end{equation}
+Chỉ số này bảo đảm tính khách quan tuyệt đối, cho phép so sánh sự tiến bộ của người học qua các thời điểm khác nhau.
+
+\subsection{Động lực học Bản sao số Lớp học (Classroom Digital Twin Dynamics)}\label{subsec:twin-dynamics}
+Trạng thái ẩn nội tại của sinh viên $i$ tại bước quyết định $t$ được biểu diễn bởi $z_{i, t} \in \mathcal{Z}$. Quá trình chuyển dịch trạng thái của từng cá nhân chịu sự tác động đồng thời của động lực học tự nhiên $\mathcal{T}_\theta$ (học được từ dữ liệu lịch sử) và mô hình tác động can thiệp sư phạm $\phi$:
+\begin{equation}\label{eq:individual-transition}
+  z_{i, t+1} \sim \mathcal{T}_{\theta, \phi}\big(z_{i, t}, a_t, \mathbf{c}_t, \Delta t, \mathbf{e}_{context, t}\big)
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $a_t \in \mathcal{A}$ là hành động can thiệp của giảng viên (ví dụ: thuyết trình, quiz, thảo luận nhóm, giải lao).
+  \item $\mathbf{c}_t$ là nội dung/chủ đề học tập hiện tại.
+  \item $\Delta t$ là thời lượng diễn ra hành động.
+  \item $\mathbf{e}_{context, t} = [\text{CO}_2, \text{Temp}, \text{Noise}, \mathbf{mask}]$ là vector bối cảnh vi khí hậu phòng học.
+  \item $\phi$ là vector tham số kịch bản phản thực mô tả biên độ tác động can thiệp (ví dụ: $\phi_{thảo\_luận}$ làm tăng độ hiểu bài nhưng tiêu hao năng lượng nhận thức).
+\end{itemize}
+
+\subsubsection{Tổng hợp Trạng thái Toàn lớp (Classroom State Aggregation: Vector 32 Chiều)}\label{subsubsec:state-32d-intro}
+Trạng thái của tập thể lớp học ảo gồm $N$ sinh viên tại thời điểm $t$ được tổng hợp thành vector trạng thái khả kiến mở rộng $\mathbf{x}_t \in \mathbb{R}^{32}$ phản ánh toàn diện 9 nhóm chỉ số từ 7 nguồn dữ liệu thực nghiệm:
+\begin{equation}\label{eq:class-state-32d}
+\begin{aligned}
+  \mathbf{x}_t = \Big[ & \mathbf{x}_{mastery}^{(0..4)}, \; \mathbf{x}_{engage}^{(5..7)}, \; \mathbf{x}_{affect}^{(8..11)}, \; \mathbf{x}_{wearable}^{(12..15)}, \\
+                       & \mathbf{x}_{climate}^{(16..18)}, \; \mathbf{x}_{social}^{(19..21)}, \; \mathbf{x}_{lms}^{(22..24)}, \; \mathbf{x}_{step}^{(25..27)}, \; \mathbf{x}_{control}^{(28..31)} \Big]^T \in \mathbb{R}^{32}
+\end{aligned}
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $\mathbf{x}_{mastery} = [\bar{m}_t, \mathbf{q}_{0.25}(m_t), \mathbf{q}_{0.75}(m_t), \text{Var}(m_t), \rho_{low, t}]$: Phân phối trạng thái ẩn tri thức giải mã từ bộ nhớ nơ-ron hồi quy GRU-DKT ($\mathbf{h}_{i, t} \in \mathbb{R}^{128}$) của $N$ học sinh qua phép chiếu Probe Mastery.
+  \item $\mathbf{x}_{engage} = [\bar{att}_t, \text{video\_retention}, \bar{fat}_t]$: Chú ý nhận thức, tỷ lệ xem bài giảng và tốc độ mệt mỏi phiên học (từ EdNet KT2--KT4).
+  \item $\mathbf{x}_{affect} = [P(\text{frust}), P(\text{conf}), P(\text{conc}), P(\text{bored})]$: Phân phối 4 trạng thái cảm xúc học tập Markov (từ ASSISTments Affect).
+  \item $\mathbf{x}_{wearable} = [\text{EDA}, \text{HR}, \text{ACC}, \text{Temp}_{skin}]$: Cảm biến đeo tay Empatica E4 ghi nhận căng thẳng sinh lý học đường.
+  \item $\mathbf{x}_{climate} = [e_{CO_2}, e_{Temp}, e_{Noise}]$: Vi khí hậu phòng học thực tế từ cảm biến IoT In-Gauge.
+  \item $\mathbf{x}_{social} = [\text{Clustering}, \text{Homophily}, \text{Isolated}]$: Cấu trúc đồ thị tiếp xúc đồng đẳng từ SocioPatterns.
+  \item $\mathbf{x}_{lms} = [\text{VLE}_{act}, \text{Reg}_{sub}, \text{Risk}_{drop}]$: Nhịp độ clickstream và rủi ro bỏ học từ OULAD.
+  \item $\mathbf{x}_{step} = [\text{Err}_{step}, \text{Hint}_{req}, \text{Lat}_{step}]$: Tỷ lệ lỗi và độ trễ cấp độ bước giải từ Cognitive Tutor (Bridge to Algebra).
+  \item $\mathbf{x}_{control} = [T_{remain}, \text{Workload}, a_{prev}, k_{rep}]$: Tiến trình phiên học và kiểm soát sư phạm chống lặp.
+\end{itemize}
+\noindent Đặc tả chi tiết từng chiều, công thức chuẩn hóa và cơ chế bù khuyết thiếu được trình bày tại \textbf{Mục~\ref{subsec:rollout-specification}}.
+
+\subsection{Bài toán Quyết định POMDP và Bán Markov}\label{subsec:pomdp-formulation}
+Môi trường lớp học thực tế là một Quá trình Quyết định Markov Quan sát Một phần (Partially Observable Markov Decision Process - POMDP) hữu hạn thời gian, định nghĩa bởi bộ 7 thành phần:
+\begin{equation}\label{eq:pomdp-tuple}
+  \mathcal{M} = \langle \mathcal{S}, \mathcal{A}, \mathcal{T}, \mathcal{R}, \Omega, \mathcal{O}, \gamma \rangle
+\end{equation}
+Do trạng thái thực $s_t \in \mathcal{S}$ không thể quan sát toàn vẹn, tác tử AI hoạt động trên vector ước lượng niềm tin (\textit{belief state approximation}) $\mathbf{x}_t \approx \mathbf{b}_t = P(s_t \mid \mathcal{H}_{\le t})$.
+
+\subsubsection{Hệ số Chiết khấu Theo Thời lượng Bán Markov (Semi-Markov Discounting)}
+Vì mỗi hoạt động sư phạm $a_t$ kéo dài một khoảng thời gian thực $\Delta t$ khác nhau (từ 3 phút đến 15 phút), ta áp dụng công thức chiết khấu phụ thuộc thời gian chuẩn tắc:
+\begin{equation}\label{eq:semi-markov-discount}
+  \gamma(\Delta t) = \gamma_{base}^{\frac{\Delta t}{\tau_0}} \quad \text{với} \quad \tau_0 = 60\text{ giây}, \; \gamma_{base} = 0.99
+\end{equation}
+Quy tắc này bảo đảm tính nhất quán toán học khi tích lũy phần thưởng trong các bước chuyển có thời lượng không đồng nhất.
+
+\subsection{Hàm Phần thưởng Đa Mục tiêu Cân bằng và Chống Reward Hacking}\label{subsec:reward-constraints}
+Chính sách giảng dạy phải dung hòa giữa việc nâng cao năng lực học tập, bảo vệ nhóm học sinh yếu, đồng thời kiểm soát khối lượng công việc của giảng viên để không gây kiệt sức (\textit{burnout}) và phòng ngừa hiện tượng sụp đổ chính sách (\textit{policy mode collapse / reward hacking}). Hàm phần thưởng tức thời $r_t$ được cấu thành bởi các thành phần cân bằng:
+\begin{equation}\label{eq:reward-function}
+  r_t = w_m \cdot \Delta \bar{M}_t + w_l \cdot \Delta M_{low, t} - w_c \cdot \text{Workload}(a_t) - w_s \cdot \mathbb{I}(a_t \ne a_{t-1}) - \mathcal{P}_{mono}(a_t, k_{rep}) - \mathcal{P}_{env}(\mathbf{e}_t) + \mathcal{R}_{ped}(a_t, \mathbf{x}_t)
+\end{equation}
+trong đó:
+\begin{itemize}
+  \item $\Delta \bar{M}_t = \bar{m}_{t+1} - \bar{m}_t$ là mức tăng trưởng độ hiểu bài trung bình của toàn lớp.
+  \item $\Delta M_{low, t} = \mathbf{q}_{0.25}(m_{t+1}) - \mathbf{q}_{0.25}(m_t)$ là mức cải thiện của nhóm 25\% sinh viên yếu nhất.
+  \item $\text{Workload}(a_t)$ là chi phí nhận thức/công sức của giảng viên (được chuẩn hóa cân bằng để hoạt động giải lao không bị khai thác làm nguồn tích lũy điểm phi lý).
+  \item $\mathcal{P}_{mono}(a_t, k_{rep}) = \lambda_{mono} \cdot \max(0, k_{rep} - 1)$ là \textbf{Hình phạt Đơn điệu Sư phạm (Pedagogical Monotony Penalty)}, phạt tăng tiến khi tác tử lặp lại cùng một hành động liên tiếp $k_{rep} \ge 2$ lần (đặc biệt phạt nặng nếu lặp lại giải lao liên tiếp gây lãng phí quỹ thời gian tiết học).
+  \item $\mathcal{P}_{env}(\mathbf{e}_t) = \lambda_f \max(0, \bar{f}_t - 0.40)^2 + \lambda_{co2} \max(0, \frac{\text{CO}_2 - 1000}{400})$ là hình phạt quá tải sinh lý học sinh và suy giảm chất lượng không khí.
+  \item $\mathcal{R}_{ped}(a_t, \mathbf{x}_t)$ là điểm thưởng sư phạm theo ngữ cảnh: thưởng xây dựng nền tảng bài giảng khi năng lực lớp còn thấp ($\bar{m} < 0.55$), thưởng kiểm tra củng cố (\textit{Formative Assessment / Retrieval Practice}) khi đan xen quiz sau thuyết trình/thảo luận, và thưởng phục hồi nhận thức khi cho nghỉ đúng thời điểm.
+\end{itemize}
+
+\subsubsection{Bài toán Tối ưu Chính sách có Ràng buộc (Constrained Policy Optimization)}
+Mục tiêu là tìm kiếm chính sách $\pi^*(a \mid \mathbf{x})$ tối đa hóa kỳ vọng phần thưởng tích lũy, thỏa mãn hai ràng buộc bất khả xâm phạm:
+\begin{equation}\label{eq:constrained-objective}
+  \max_{\pi} \; \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \gamma_{0:t} \, r_t \right]
+\end{equation}
+\begin{equation}\label{eq:constraint-workload}
+  \text{thỏa mãn:} \quad \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \text{Workload}(a_t) \right] \le B_{max} \quad \text{(Ngân sách công sức giảng viên)}
+\end{equation}
+\begin{equation}\label{eq:constraint-fairness}
+  \text{và:} \quad \mathbb{E}_{\tau \sim \pi} \left[ \sum_{t=0}^{H} \max\big(0, -\Delta M_{low, t}\big) \right] \le \epsilon_{harm} \quad \text{(Bảo vệ sinh viên yếu)}
+\end{equation}
+
+\subsection{Thuật toán Offline RL: Conservative Q-Learning (CQL) kết hợp Entropy Regularization}\label{subsec:cql}
+Để huấn luyện tác tử sư phạm từ dữ liệu tương tác lịch sử $\mathcal{D}$ mà không gặp phải hiện tượng thổi phồng giá trị ngoại phân phối (\textit{out-of-distribution value overestimation}) hay co cụm hành vi (\textit{mode collapse}), ClassTwin áp dụng thuật toán \textbf{Discrete Conservative Q-Learning (CQL)} kết hợp mặt nạ hành vi hợp lệ $\mathcal{A}_{valid}(\mathbf{x}_t)$ và phân phối hành động Boltzmann Softmax:
+
+\begin{equation}\label{eq:td-target}
+  y_{TD} = r_t + \gamma(\Delta t) \cdot (1 - d_t) \cdot \max_{a' \in \mathcal{A}_{valid}(\mathbf{x}_{t+1})} Q_{\bar{\theta}}(\mathbf{x}_{t+1}, a')
+\end{equation}
+Hàm mục tiêu tối thiểu hóa tổn thất của hàm Q-network với trọng số bảo thủ $\alpha$:
+\begin{equation}\label{eq:cql-loss}
+  \mathcal{L}_{CQL}(\theta) = \frac{1}{2} \mathbb{E}_{(\mathbf{x}, a, r, \mathbf{x}') \sim \mathcal{D}} \left[ \big(Q_\theta(\mathbf{x}, a) - y_{TD}\big)^2 \right] + \alpha \cdot \mathbb{E}_{\mathbf{x} \sim \mathcal{D}} \left[ \ln \sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\big(Q_\theta(\mathbf{x}, a')\big) - Q_\theta(\mathbf{x}, a_\mathcal{D}) \right]
+\end{equation}
+Khi suy luận trực tuyến, nhằm triệt tiêu hiện tượng argmax tham lam co cụm vào 1--2 lựa chọn, chính sách triển khai phân phối xác suất Boltzmann Softmax có hiệu chỉnh lặp:
+\begin{equation}\label{eq:boltzmann-policy}
+  \pi_\theta(a \mid \mathbf{x}) = \frac{\exp\Big(\big[Q_\theta(\mathbf{x}, a) - \lambda_{rep} \cdot \mathbb{I}(a == a_{last})\big] \,/\, \tau\Big)}{\sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\Big(\big[Q_\theta(\mathbf{x}, a') - \lambda_{rep} \cdot \mathbb{I}(a' == a_{last})\big] \,/\, \tau\Big)}
+\end{equation}
+với nhiệt độ $\tau = 0.35$ và hệ số phạt lặp $\lambda_{rep} = 0.60$, bảo đảm độ đa dạng Entropy sư phạm $H(\pi) = -\sum_a \pi(a)\log_2 \pi(a) \ge 0.70$ (đạt $0.94$ trên thực nghiệm benchmark), dung hòa toàn diện cả 5 hoạt động sư phạm.
+
+\subsection{Học Tăng cường Nghịch đảo (Inverse RL) với Mẫu Chuyên gia Ngẫu nhiên Mềm}\label{subsec:irl-theory}
+Bên cạnh hàm thưởng hiển thị, ClassTwin tích hợp nhánh \textbf{Maximum Entropy Inverse Reinforcement Learning (MaxEnt-IRL)} để khôi phục hàm thưởng ẩn $R_\psi(\mathbf{x}, a)$ từ các quỹ đạo chuyên gia sư phạm. Thay vì sử dụng các luật if-else cứng nhắc dễ gây thiên lệch mẫu, ClassTwin thiết lập bộ sinh quỹ đạo chuyên gia ngẫu nhiên mềm (\textit{Stochastic Expert Demonstrator}):
+\begin{equation}\label{eq:irl-expert-utility}
+  P_{exp}(a \mid \mathbf{x}) = \text{Softmax}\big(\mathbf{U}_{ped}(\mathbf{x}) \,/\, \tau_{exp}\big)
+\end{equation}
+trong đó $\mathbf{U}_{ped}$ là vector tiện ích sư phạm đa chiều (độ lệch phân vị $\mathbf{q}_{75} - \mathbf{q}_{25}$ kích hoạt học nhóm, mệt mỏi kích hoạt giải lao, giảng bài mới kích hoạt bài giảng, v.v.). Hàm thưởng ẩn $R_\psi$ được tối ưu hóa qua hàm mục tiêu đối ngẫu MaxEnt:
+\begin{equation}\label{eq:maxent-loss}
+  \mathcal{L}_{IRL}(\psi) = -\mathbb{E}_{(s, a) \sim \mathcal{D}_{exp}} [R_\psi(s, a)] + \ln \sum_{s', a'} \exp\big(R_\psi(s', a')\big) + \beta_{reg} \|R_\psi\|_2^2
+\end{equation}
+giúp hệ thống hiểu được các giá trị ngầm định của giảng viên chuyên gia mà không bị thiên lệch vào bất kỳ hoạt động đơn lẻ nào.
+
+\newpage
+
+% =========================================================================
+% PHẦN III: TRÌNH DIỄN THUẬT TOÁN VÀ MÃ GIẢ (PSEUDOCODE)
+% =========================================================================

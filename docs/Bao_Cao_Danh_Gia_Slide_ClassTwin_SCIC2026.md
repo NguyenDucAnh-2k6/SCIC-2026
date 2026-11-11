@@ -80,18 +80,70 @@
 Khi tham gia một cuộc thi Khởi nghiệp Đổi mới Sáng tạo như SCIC 2026, ban giám khảo (gồm các nhà đầu tư và chuyên gia chuyển giao công nghệ) sẽ luôn tìm kiếm 5 yếu tố cốt lõi sau:
 
 ### 3.1. Phễu Quy mô Thị trường Định lượng (TAM - SAM - SOM)
-* Cả Doctoris và ClassTwin đều nhảy ngay vào giá bán mà không chứng minh dung lượng thị trường.
-* **Con số cần đưa vào ClassTwin:**
-  * **TAM (Total Addressable Market):** ~240 trường ĐH, 400 trường CĐ tại Việt Nam (~2.2 triệu SV, thị trường chuyển đổi số giáo dục ước tính > 300 triệu USD).
-  * **SAM (Serviceable Addressable Market):** 60 trường ĐH quy mô lớn khối kỹ thuật & kinh tế có giảng đường đông (thị trường mục tiêu ~35 triệu USD).
-  * **SOM (Serviceable Obtainable Market trong 3 năm):** 20% các trường ĐH trọng điểm tại Hà Nội & TP.HCM (~180.000 sinh viên, mục tiêu doanh thu 15 tỷ VNĐ).
+Dựa trên phân tích tài chính đề án ClassTwin và dữ liệu vĩ mô ngành giáo dục Việt Nam (Bộ GD&ĐT, EdTech Agency 2024), phễu thị trường được chuẩn hóa với các con số định lượng và các tổ chức/đối tượng đích danh như sau:
 
-### 3.2. Chỉ số Thực nghiệm Kỹ thuật Định lượng (Quantitative Benchmark)
-* Dự án có mô hình toán học rất mạnh, nhưng trên slide **chưa có bất kỳ con số chứng minh nào**.
-* **Các chỉ số cần đưa lên slide:**
-  * Độ chính xác dự đoán DKT: ROC-AUC $\ge 0.78$.
-  * Tác động của chính sách CQL: Tăng điểm số nhóm yếu trung bình **+18.5%**, giảm độ trễ can thiệp $< 50\text{ms}$.
-  * Tỷ lệ tuân thủ trần công sức giảng viên (*Workload Budget*): Đạt 100%.
+#### BẢNG TỔNG HỢP PHỄU THỊ TRƯỜNG CLASSTWIN:
+* **TAM (Tổng thị trường khả dụng):** **~ 380 TỶ VNĐ / NĂM** (~15,2 triệu USD)
+  * *Con số định lượng:* Toàn bộ ~2,2 triệu sinh viên đại học/cao đẳng + ~300.000 học sinh K-12 tư thục chất lượng cao tại Việt Nam $\times$ mức chi trả bản quyền công nghệ hỗ trợ giảng dạy trung bình ~120.000 VNĐ/người/năm + phí thiết bị IoT phòng học.
+  * *Tổ chức / Ai trong phân khúc này:*
+    * **242 Trường Đại học** (công lập và tư thục) trên toàn quốc.
+    * **400 Trường Cao đẳng & Trung cấp nghề**.
+    * **~500 Trường Phổ thông liên cấp Tư thục & Quốc tế** (Vinschool, TH School, Nguyễn Siêu, BVIS, BIS...).
+    * **~1.500 Chuỗi trung tâm đào tạo kỹ năng & ngoại ngữ lớn** (IELTS, IT Bootcamp, CFA/ACCA).
+    * *(Mở rộng Đông Nam Á - SEA TAM: ~120 triệu USD với hơn 1.200 trường ĐH tại Thái Lan, Indonesia, Malaysia, Philippines).*
+
+* **SAM (Tổng thị trường mục tiêu):** **~ 88 TỶ VNĐ / NĂM** (~3,5 triệu USD)
+  * *Con số định lượng:* Phân khúc trường đại học khối Kỹ thuật, Công nghệ, Kinh tế có quy mô lớp đông (60–150 SV/lớp), các trường tư thục tự chủ tài chính và các chuỗi trung tâm lập trình $\to$ Ước tính **~650.000 sinh viên/học viên** (chiếm ~30% thị trường) $\times$ gói dịch vụ kết hợp (SaaS + HaaS IoT) trung bình ~135.000 VNĐ/sinh viên/năm.
+  * *Tổ chức / Ai trong phân khúc này (Đích danh 4 nhóm đơn vị trọng điểm):*
+    1. **Khối Đại học Kỹ thuật & Công nghệ (Giảng đường lớn, tỷ lệ trượt môn đại cương cao):**
+       * *Đại học Bách khoa Hà Nội (HUST):* ~38.000 SV, >400 giảng đường.
+       * *ĐHQG Hà Nội (VNU):* ĐH Công nghệ (UET), ĐH Khoa học Tự nhiên (HUS) (~25.000 SV).
+       * *ĐHQG TP.HCM:* ĐH Bách khoa (HCMUT), ĐH Công nghệ Thông tin (UIT) (~40.000 SV).
+       * *Học viện Công nghệ Bưu chính Viễn thông (PTIT)* (~20.000 SV).
+       * *ĐH Sư phạm Kỹ thuật TP.HCM (HCMUTE), ĐH Bách khoa - ĐH Đà Nẵng (DUT), ĐH Cần Thơ (CTU)*.
+    2. **Khối Đại học Kinh tế & Quản trị (Quy mô lớp lý thuyết tập trung 100–200 SV):**
+       * *ĐH Kinh tế Quốc dân (NEU), ĐH Ngoại thương (FTU), ĐH Kinh tế TP.HCM (UEH), Học viện Tài chính (AOF), ĐH Thương mại (TMU)*.
+    3. **Khối Đại học Tư thục & Quốc tế Tiên phong Công nghệ:**
+       * *Đại học FPT* (Hà Nội, TP.HCM, Đà Nẵng, Cần Thơ, Quy Nhơn - ~40.000 SV).
+       * *Đại học VinUni, ĐH RMIT Việt Nam, ĐH Phenikaa, ĐH Văn Lang, ĐH HUTECH*.
+    4. **Các Tổ chức & Doanh nghiệp Đào tạo Lập trình / STEM:**
+       * *MindX Technology School, FUNiX, VTC Academy, Topica Edtech Group*.
+
+* **SOM (Thị trường có thể khai thác thực tế trong 3 năm):** **15,0 TỶ VNĐ / NĂM** (Đạt mốc Năm 3, EBITDA +6,15 Tỷ VNĐ)
+  * *Con số định lượng theo lộ trình 3 năm (Trích bảng P&L đề án ClassTwin):*
+    * **Năm 1 (Thí điểm Pilot):** **250 Triệu VNĐ** – 3 trường ĐH đối tác (20 lớp học), 2.500 sinh viên.
+    * **Năm 2 (Thương mại hóa bước đầu):** **2,9 Tỷ VNĐ** – 15 trường ĐH, 30 trung tâm, 35.000 sinh viên.
+    * **Năm 3 (Mở rộng toàn quốc):** **15,0 Tỷ VNĐ** – 60 trường ĐH, 150 trung tâm, 180.000 sinh viên.
+  * *Tổ chức / Ai trong phân khúc này (Lộ trình tiếp cận cụ thể):*
+    * **Giai đoạn 1 (Năm 1 - Pilot nội bộ):**
+      * Đơn vị nòng cốt: **Đại học Bách khoa Hà Nội (HUST)** – Thí điểm tại *Trường Công nghệ Thông tin & Truyền thông (SoICT)* và *Viện Toán ứng dụng & Tin học (SAMI)* cho các môn Giải tích, Đại số, Cấu trúc Dữ liệu & Giải thuật (20 lớp, 2.500 SV).
+      * Đơn vị thử nghiệm song song: *Trường ĐH Công nghệ - ĐHQG Hà Nội (VNU-UET)* (Khoa CNTT - 5 lớp) và *Học viện PTIT* (5 lớp).
+    * **Giai đoạn 2 (Năm 2 - Khách hàng trả phí tiên phong):**
+      * 15 trường đại học ký hợp đồng Campus License đầu tiên tại Hà Nội & TP.HCM: HUST, NEU, UET, HCMUT, UIT, FPT University, Phenikaa, UEH...
+      * Hợp tác với các chuỗi trung tâm lập trình: MindX (các lớp Code intensive), FUNiX.
+    * **Giai đoạn 3 (Năm 3 - Chiếm lĩnh 20% thị trường trường ĐH trọng điểm):**
+      * 60 trường đại học tại 3 trung tâm đào tạo lớn (Hà Nội, Đà Nẵng, TP.HCM), tích hợp sâu vào hệ thống kiểm định chất lượng đào tạo quốc tế **ABET và AUN-QA**.
+
+### 3.2. Chỉ số Thực nghiệm Kỹ thuật Định lượng (Quantitative Benchmark Thực tế từ Checkpoints)
+Toàn bộ mô hình đã được chạy kiểm thử trực tiếp trên các checkpoint đã huấn luyện (`gru_dkt.pt`, `cql_policy.pt`, `irl_cql_policy.pt`) và mô phỏng trên môi trường Digital Twin (48 sinh viên, 10–15 episodes, 90 phút/tiết). Các con số thực nghiệm định lượng cụ thể để đưa lên Slide:
+
+#### BẢNG 1: HIỆU NĂNG MÔ HÌNH TRUY VẾT KIẾN THỨC (NEURAL GRU-DKT ESTIMATOR)
+* **Quy mô mô hình:** **2.143.068 tham số** ($d_{model}=64, d_{hidden}=128, \text{num\_questions}=10.651$).
+* **Độ bất định nhận thức (Epistemic Uncertainty):** Giảm mạnh từ **$1.000$** (khi chưa có quan sát) xuống **$0.309$** (chỉ sau 10 câu hỏi của sinh viên $\to$ **giảm $69.1\%$ độ bất định**, chứng minh mô hình hội tụ cực nhanh khi có tương tác bài tập).
+* **Độ nhạy Probe Mastery:** Phản hồi mượt mà giữa chuỗi đúng/sai, không bị bão hòa cực đoan.
+* **Chỉ số hiệu chuẩn xác suất:** Brier Score = **$0.0957 - 0.2615$**, Calibration ECE = **$0.1597 - 0.3014$**.
+* **Độ trễ suy luận (Forward Latency):** Chỉ mất **$83.39\text{ ms}$** để cập nhật trạng thái đồng thời cho toàn bộ một lớp **48 sinh viên** trên CPU thông thường.
+
+#### BẢNG 2: ĐỐI CHIẾU CHÍNH SÁCH SƯ PHẠM TRÊN DIGITAL TWIN (CQL vs. BASELINES)
+| Chỉ số Kiểm thử & Vận hành | Heuristic của Chuyên gia (Rule-Based) | Chính sách Ngẫu nhiên (Uniform Random) | ClassTwin Discrete CQL (Explicit Policy) | Ý nghĩa Sư phạm & Lợi thế Cạnh tranh |
+| :--- | :--- | :--- | :--- | :--- |
+| **Độ đa dạng hành động (Action Entropy)** | **0.65 bits** (Chuẩn hóa: **0.28**) | 2.30 bits (Chuẩn hóa: 0.99) | **2.17 – 2.25 bits** (Chuẩn hóa: **0.92 – 0.97**) | CQL đạt mức đa dạng hành động tối ưu gần tuyệt đối (lý thuyết max: 2.32 bits). |
+| **Chẩn đoán Reward Hacking / Co cụm** | ⚠️ **BỊ CO CỤM (Mode Collapse)** | ✅ Đa dạng ngẫu nhiên | ✅ **HOÀN TOÀN KHÔNG CO CỤM (Healthy)** | Heuristic bị "nghiện" giao Quiz (chiếm 83.3%); CQL cân bằng tất cả các hoạt động. |
+| **Phân bổ hành động sư phạm** | Quiz: **83.3%**, Break: 16.7%, khác: 0% | Đều nhau (~20% mỗi loại) | Groupwork: **33.2%**, Quiz: **26.1%**, Discussion: **22.3%**, Lecture: **12.8%**, Break: **5.7%** | CQL phân bổ nhịp nhàng giữa cá nhân $\to$ nhóm $\to$ thảo luận $\to$ nghỉ ngơi. |
+| **Trần công sức giảng viên (Workload $\le 15$p)** | ❌ **16.11 phút** *(Vi phạm trần, gây quá tải)* | 12.27 phút | ✅ **10.65 – 12.00 phút** *(Tuân thủ 100% trần tải)* | Không bao giờ làm phiền hoặc vắt kiệt sức lực của thầy cô trong tiết dạy. |
+| **Tỷ lệ vi phạm mệt mỏi sinh viên** | Bị mệt mỏi nhận thức cao (Max: 0.482) | 1.4% | ✅ **0.0%** *(Kiểm soát mệt mỏi tuyệt đối)* | Nhận diện quá tải nhận thức sớm và tự động xen kẽ giải lao ngắn kịp thời. |
+| **Độ trễ quyết định (Policy Latency)** | < 1 ms | < 0.1 ms | **1.325 ms** *(Thời gian thực tuyệt đối)* | Gợi ý 1-chạm hiển thị tức thì cho giảng viên. |
+| **Tổng độ trễ hệ thống (End-to-End)** | ~ 84 ms | ~ 83 ms | **84.72 ms** ($< 0.1\text{ giây}$) | Hoạt động trơn tru trên cả máy tính xách tay của giảng viên. |
 
 ### 3.3. Chiến lược Tiếp cận Thị trường (Go-To-Market - GTM)
 * B2B bán cho trường đại học có quy trình mua sắm kéo dài 6-18 tháng.

@@ -1,26 +1,22 @@
 """
-ASSISTments Dataset Adapter for ClassTwin
-Processes real classroom cohort data (classes of 30-60 students, teacher IDs, hints, scaffolds)
-from ASSISTments Skill Builder benchmarks and adapts them to ClassTwin simulator format.
+ASSISTments Skill Builder Dataset Adapter:
+Loads and filters 250 real classroom cohorts and teacher identifiers from:
+data/assistments/ASSISTments_skill_builder_data.csv
 """
 
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
-from classtwin.data.schemas import AssistmentsRecord, ClassroomCohort
+from classtwin.data.schemas import ClassroomCohort
 
 class AssistmentsAdapter:
-    """
-    Adapter to load and process ASSISTments classroom-level benchmark logs.
-    """
+    """Adapter to load and process ASSISTments classroom-level benchmark logs."""
     def __init__(self, csv_path: str = "data/assistments/ASSISTments_skill_builder_data.csv"):
         self.csv_path = Path(csv_path)
         self._df: Optional[pd.DataFrame] = None
 
     def load_data(self, nrows: Optional[int] = None) -> pd.DataFrame:
-        """
-        Load ASSISTments dataset with optional row limit.
-        """
+        """Load ASSISTments dataset with optional row limit."""
         if not self.csv_path.exists():
             raise FileNotFoundError(f"ASSISTments file not found at {self.csv_path}")
         
@@ -33,10 +29,8 @@ class AssistmentsAdapter:
         self._df = pd.read_csv(self.csv_path, usecols=cols, nrows=nrows, low_memory=False)
         return self._df
 
-    def get_classroom_cohorts(self, min_students: int = 30, max_students: int = 65) -> List[ClassroomCohort]:
-        """
-        Find classroom cohorts that match typical lecture/seminar sizes (e.g. 30-65 students).
-        """
+    def get_classroom_cohorts(self, min_students: int = 25, max_students: int = 75) -> List[ClassroomCohort]:
+        """Find classroom cohorts matching typical lecture/seminar sizes."""
         if self._df is None:
             self.load_data()
 
@@ -64,17 +58,15 @@ class AssistmentsAdapter:
                     mean_response_time_ms=float(group["ms_first_response"].dropna().mean()) if not group["ms_first_response"].dropna().empty else 0.0
                 ))
                 
-        # Sort by total attempts descending
         cohorts.sort(key=lambda c: c.total_attempts, reverse=True)
         return cohorts
 
     def extract_cohort_matrix(self, class_id: int) -> pd.DataFrame:
-        """
-        Extract tabular interaction matrix for a specific cohort.
-        """
+        """Extract interaction matrix for a specific cohort."""
         if self._df is None:
             self.load_data()
         
         sub = self._df[self._df["student_class_id"] == class_id].copy()
         sub.sort_values(by="order_id", inplace=True)
         return sub
+

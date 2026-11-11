@@ -1,0 +1,126 @@
+\section{Trình diễn Thuật toán và Mã giả (Pseudocode)}\label{sec:thuat-toan}
+
+Phần này trình diễn chi tiết 4 thuật toán xương sống của hệ thống ClassTwin dưới dạng mã giả chuẩn mực để các kỹ sư AI, chuyên gia dữ liệu và nhà nghiên cứu sư phạm trong đội ngũ dễ dàng đối soát và hiện thực hóa bằng mã nguồn Python.
+
+\subsection{Thuật toán 1: Ước lượng Trạng thái Người học và Đo lường Mastery}\label{subsec:algo-estimator}
+Thuật toán~\ref{algo:state-estimator} chịu trách nhiệm xử lý chuỗi sự kiện học tập ngoại tuyến hoặc trực tuyến, duy trì bộ nhớ ẩn GRU và trích xuất chỉ số nắm vững kiến thức chuẩn mực thông qua tập probe đã được cân bằng.
+
+\begin{algorithm}[H]
+\caption{Ước lượng Trạng thái Người học \& Đo lường Probe Mastery}\label{algo:state-estimator}
+\begin{algorithmic}[1]
+\Require Chuỗi sự kiện tương tác của sinh viên $i$: $\mathcal{E}_i = \{e_1, e_2, \dots, e_t\}$; Tập probe kỹ năng $\mathcal{P}_k$; Mô hình $\text{GRU}_{\mathbf{w}}$.
+\Ensure Vector trạng thái ẩn $\mathbf{h}_{i, t}$; Mức độ nắm vững ước lượng $m_{i, k, t}$; Độ bất định $\sigma_{i, k, t}$.
+\State Khởi tạo trạng thái ẩn từ phân phối tiên nghiệm: $\mathbf{h}_{i, 0} \leftarrow \mathbf{h}_{prior}$, số quan sát $n_{obs} \leftarrow 0$
+\For{mỗi sự kiện $e_\tau = \langle q_\tau, y_\tau, \Delta \tau \rangle \in \mathcal{E}_i$}
+    \State Trích xuất vector nhúng câu hỏi và đặc trưng: $\mathbf{x}_\tau \leftarrow \big[ \text{Embed}(q_\tau); y_\tau; \log(1 + \Delta \tau) \big]$
+    \State Cập nhật trạng thái bộ nhớ ẩn: $\mathbf{h}_{i, \tau} \leftarrow \text{GRU}_{\mathbf{w}}\big(\mathbf{h}_{i, \tau-1}, \mathbf{x}_\tau\big)$
+    \State $n_{obs} \leftarrow n_{obs} + 1$
+\EndFor
+\State \textbf{// Tính toán mức nắm vững kiến thức thông qua tập câu hỏi Probe chuẩn hóa}
+\State Khởi tạo tổng xác suất $S_{prob} \leftarrow 0$
+\For{mỗi câu hỏi kiểm định $q^* \in \mathcal{P}_k$}
+    \State Tính xác suất trả lời đúng có điều kiện:
+    \State $p(y=1 \mid \mathbf{h}_{i, t}, q^*) \leftarrow \sigma\big(\mathbf{w}_{q^*}^T \mathbf{h}_{i, t} + b_{q^*}\big)$
+    \State $S_{prob} \leftarrow S_{prob} + p(y=1 \mid \mathbf{h}_{i, t}, q^*)$
+\EndFor
+\State $m_{i, k, t} \leftarrow \frac{1}{|\mathcal{P}_k|} \cdot S_{prob}$
+\State \textbf{// Ước lượng độ bất định dựa trên kích thước mẫu quan sát}
+\State $\sigma_{i, k, t} \leftarrow \frac{1}{\sqrt{1 + n_{obs}}} + \text{Var}_{q^* \in \mathcal{P}_k}\big(p(y=1 \mid \mathbf{h}_{i, t}, q^*)\big)$
+\State \Return $\mathbf{h}_{i, t}, m_{i, k, t}, \sigma_{i, k, t}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 2: Mô phỏng Động lực học Phản thực (Digital Twin Rollout)}\label{subsec:algo-twin-rollout}
+Thuật toán~\ref{algo:twin-rollout} đóng vai trò lõi giả lập (\textit{Simulation Engine}) của Bản sao số. Trước khi một hành động $a$ được gợi ý cho giảng viên, thuật toán sẽ tiến hành phân tích kịch bản ``What-if?'' trên toàn bộ lớp học ảo gồm $N$ sinh viên.
+
+\begin{algorithm}[H]
+\caption{Mô phỏng Phản thực Lớp học (Counterfactual Digital Twin Rollout)}\label{algo:twin-rollout}
+\begin{algorithmic}[1]
+\Require Snapshot lớp học hiện tại $\mathcal{C}_t = \{z_{1,t}, \dots, z_{N,t}\}$; Ứng viên can thiệp $a \in \mathcal{A}$; Thời lượng $\Delta t$; Tập kịch bản $\Phi = \{\phi^{(1)}, \dots, \phi^{(M)}\}$; Số lượng mẫu Monte-Carlo $K$.
+\Ensure Phân phối kỳ vọng phần thưởng $\mathbb{E}[r]$, khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ và mức cải thiện của nhóm yếu $\Delta M_{low}$.
+\State Khởi tạo mảng kết quả mô phỏng $\mathcal{R}_{sim} \leftarrow [\;]$
+\For{mỗi kịch bản phản thực $\phi^{(m)} \in \Phi$}
+    \For{vòng lặp lấy mẫu nhiễu ngẫu nhiên $k = 1 \to K$}
+        \State Khởi tạo lớp học sau can thiệp $\mathcal{C}_{t+1}^{(m, k)} \leftarrow \emptyset$
+        \For{từng sinh viên $i = 1 \to N$}
+            \State Sinh biến nhiễu ngẫu nhiên hành vi: $\epsilon_i \sim \mathcal{N}(0, \Sigma_{env})$
+            \State Cập nhật trạng thái cá nhân dưới tác động của $(a, \Delta t, \phi^{(m)})$ theo CT~\eqref{eq:individual-transition}:
+            \State $z_{i, t+1} \leftarrow \mathcal{T}_{\theta}\big(z_{i, t}, a, \Delta t, \mathbf{c}_t\big) + \Delta z\big(\phi^{(m)}, a\big) + \epsilon_i$
+            \State Đo lường độ hiểu bài mới $m_{i, t+1}$ qua tập probe $\mathcal{P}_k$
+            \State Thêm $z_{i, t+1}$ vào $\mathcal{C}_{t+1}^{(m, k)}$
+        \EndFor
+        \State Tính độ hiểu bài trung bình mới $\bar{M}_{t+1}$ và phân vị nhóm yếu $M_{low, t+1}$ từ $\mathcal{C}_{t+1}^{(m, k)}$
+        \State Tính phần thưởng mô phỏng $r^{(m, k)}$ theo công thức~\eqref{eq:reward-function}
+        \State Lưu $r^{(m, k)}$ vào danh sách $\mathcal{R}_{sim}$
+    \EndFor
+\EndFor
+\State Tính toán phân vị thống kê: $\text{Median} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.50)$
+\State $\text{P}_{10} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.10)$, $\text{P}_{90} \leftarrow \text{Quantile}(\mathcal{R}_{sim}, 0.90)$
+\State \Return $\text{Median}, [\text{P}_{10}, \text{P}_{90}], \Delta M_{low}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 3: Tối ưu Chính sách Sư phạm Bằng Constrained Offline RL}\label{subsec:algo-cql-train}
+Thuật toán~\ref{algo:cql-train} mô tả quy trình huấn luyện mạng nơ-ron chính sách $Q_\theta(\mathbf{x}, a)$ trên tập dữ liệu chuyển dịch tổng hợp/lịch sử $\mathcal{D}$, áp dụng mặt nạ hành động khả thi và cơ chế phạt bảo thủ CQL.
+
+\begin{algorithm}[H]
+\caption{Huấn luyện Chính sách Sư phạm Offline bằng Constrained CQL}\label{algo:cql-train}
+\begin{algorithmic}[1]
+\Require Tập dữ liệu chuyển dịch $\mathcal{D} = \{(\mathbf{x}, a, r, \mathbf{x}', \Delta t, d)\}$; Hệ số phạt bảo thủ $\alpha$; Tốc độ học $\eta$; Trọng số mục tiêu cập nhật mềm $\tau_{polyak}$; Ngân sách $B_{max}$.
+\Ensure Mạng giá trị Q-network đã hội tụ $Q_\theta^*(\mathbf{x}, a)$.
+\State Khởi tạo trọng số mạng Q chính $\theta$ ngẫu nhiên, mạng đích $\bar{\theta} \leftarrow \theta$
+\For{epoch $= 1 \to \text{MaxEpochs}$}
+    \For{mỗi mini-batch $\mathcal{B} \sim \mathcal{D}$}
+        \For{từng mẫu chuyển dịch $(\mathbf{x}_j, a_j, r_j, \mathbf{x}'_j, \Delta t_j, d_j) \in \mathcal{B}$}
+            \State Xác định mặt nạ hành động hợp lệ tại $\mathbf{x}'_j$: $\mathcal{A}_{valid}(\mathbf{x}'_j) \leftarrow \text{FilterMask}(\mathbf{x}'_j, B_{max})$
+            \State Tính hệ số chiết khấu Bán Markov: $\gamma_j \leftarrow \gamma_{base}^{\Delta t_j / \tau_0}$
+            \State Tính giá trị TD Target có áp dụng mặt nạ:
+            \State $y_{TD, j} \leftarrow r_j + \gamma_j \cdot (1 - d_j) \cdot \max_{a' \in \mathcal{A}_{valid}(\mathbf{x}'_j)} Q_{\bar{\theta}}(\mathbf{x}'_j, a')$
+        \EndFor
+        \State \textbf{// Tính gradient tổn thất Bellman chuẩn tắc}
+        \State $\nabla_\theta \mathcal{L}_{TD} \leftarrow \frac{1}{|\mathcal{B}|} \sum_{j \in \mathcal{B}} \big(Q_\theta(\mathbf{x}_j, a_j) - y_{TD, j}\big) \nabla_\theta Q_\theta(\mathbf{x}_j, a_j)$
+        \State \textbf{// Tính gradient số hạng điều chuẩn bảo thủ CQL}
+        \State $\nabla_\theta \mathcal{L}_{CQL} \leftarrow \frac{\alpha}{|\mathcal{B}|} \sum_{j \in \mathcal{B}} \left[ \sum_{a' \in \mathcal{A}_{valid}} \frac{\exp(Q_\theta(\mathbf{x}_j, a'))}{\sum \exp(Q_\theta(\mathbf{x}_j, \cdot))} \nabla_\theta Q_\theta(\mathbf{x}_j, a') - \nabla_\theta Q_\theta(\mathbf{x}_j, a_j) \right]$
+        \State Cập nhật trọng số mạng bằng thuật toán AdamW:
+        \State $\theta \leftarrow \theta - \eta \cdot \big(\nabla_\theta \mathcal{L}_{TD} + \nabla_\theta \mathcal{L}_{CQL}\big)$
+        \State Cập nhật mềm mạng trọng số đích: $\bar{\theta} \leftarrow \tau_{polyak} \theta + (1 - \tau_{polyak}) \bar{\theta}$
+    \EndFor
+\EndFor
+\State \Return $Q_\theta$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 4: Suy luận Trực tuyến và Hỗ trợ Quyết định Giảng viên}\label{subsec:algo-online-inference}
+Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tương tác thời gian thực tại lớp học, tích hợp kiểm tra ngưỡng an toàn (\textit{Safe Fallback}) và cơ chế phản hồi của con người (\textit{Human-in-the-Loop}).
+
+\begin{algorithm}[H]
+\caption{Vòng lặp Suy luận Trực tuyến \& Hỗ trợ Quyết định Giảng viên}\label{algo:online-inference}
+\begin{algorithmic}[1]
+\Require Định danh lớp học $\text{class\_id}$; Dòng sự kiện thời gian thực $\mathcal{E}_{stream}$; Thời lượng buổi học $T_{max} \in \{45', 90', 180'\}$; Thời gian còn lại $T_{remain}$; Ngưỡng dữ liệu hợp lệ $\Lambda_{cov} = 0.65$; Ngưỡng bất định tối đa $\Sigma_{max} = 0.40$.
+\Ensure Gợi ý sư phạm khả thi $a^*$; Báo cáo giải thích minh bạch $\mathcal{X}_{reason}$.
+\State Thu thập và làm sạch các sự kiện trong cửa sổ trễ $\Delta W$: $\mathbf{E} \leftarrow \text{IngestAndVerify}(\mathcal{E}_{stream})$
+\State Cập nhật trạng thái ẩn từng sinh viên: $\forall i, \mathbf{h}_{i, t} \leftarrow \text{UpdateState}(\mathbf{h}_{i, t-1}, \mathbf{E}_i)$
+\State Tính tỷ lệ bao phủ dữ liệu hợp lệ: $\text{Coverage} \leftarrow \frac{N_{observed}}{N_{enrolled}}$
+\State \textbf{if} $\text{Coverage} < \Lambda_{cov}$ \textbf{or} $\text{Uncertainty} > \Sigma_{max}$ \textbf{then}
+    \State Kích hoạt cơ chế an toàn: $a^* \leftarrow \text{RuleBasedDefault}(T_{remain})$
+    \State $\mathcal{X}_{reason} \leftarrow \text{``Chưa đủ dữ liệu quan sát tin cậy. Đề xuất giữ nguyên tiến trình giảng.''}$
+    \State \Return $a^*, \mathcal{X}_{reason}$
+\State \textbf{end if}
+\State Tổng hợp vector trạng thái lớp học $\mathbf{x}_t$ theo công thức~\eqref{eq:class-state}
+\State Lọc danh sách hành động khả thi: $\mathcal{A}_{cand} \leftarrow \text{MaskActions}(\mathbf{x}_t, T_{remain})$
+\State Chọn hành động sư phạm theo phân phối Boltzmann có điều chuẩn chống lặp: $a^* \sim \pi_\theta(a \mid \mathbf{x}_t)$ theo CT~\eqref{eq:boltzmann-policy}
+\State Chạy mô phỏng phản thực (Thuật toán~\ref{algo:twin-rollout}) để sinh khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ của $a^*$
+\State Tạo bản giải thích sư phạm tự nhiên $\mathcal{X}_{reason}$ dựa trên phân phối năng lực lớp học
+\State Gửi gói gợi ý lên \textbf{Teacher App Dashboard}: $\langle a^*, \Delta t, [\text{P}_{10}, \text{P}_{90}], \mathcal{X}_{reason} \rangle$
+\State \textbf{// Con người chốt quyết định (Human-in-the-Loop)}
+\State Nhận phản hồi từ giảng viên: $\text{decision} \in \{\text{ACCEPT}, \text{MODIFY}, \text{REJECT}\}$
+\State Ghi nhận hành động thực thi $a_{executed}$ và thời lượng thực tế vào nhật ký $\mathcal{D}_{log}$
+\State \Return $a_{executed}$
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+
+% =========================================================================
+% PHẦN IV: KIẾN TRÚC HỆ THỐNG VÀ BẢO MẬT DỮ LIỆU
+% =========================================================================

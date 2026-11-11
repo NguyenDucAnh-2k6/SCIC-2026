@@ -1,18 +1,13 @@
-from .action_space import (
-    PEDAGOGICAL_ACTIONS,
-    DEFAULT_DURATIONS_MINUTES,
-    ACTION_WORKLOAD_COST,
-    get_valid_action_mask
-)
+from .action_space import PEDAGOGICAL_ACTIONS, DEFAULT_DURATIONS_MINUTES, get_valid_action_mask
+from .cql import DiscreteCQL
 from .rules import RuleBasedPolicy
-from .cql import DiscreteCQL, DiscreteQNetwork
+from .trainer import train_cql_policy
 
 __all__ = [
     "PEDAGOGICAL_ACTIONS",
     "DEFAULT_DURATIONS_MINUTES",
-    "ACTION_WORKLOAD_COST",
     "get_valid_action_mask",
-    "RuleBasedPolicy",
     "DiscreteCQL",
-    "DiscreteQNetwork"
+    "RuleBasedPolicy",
+    "train_cql_policy"
 ]

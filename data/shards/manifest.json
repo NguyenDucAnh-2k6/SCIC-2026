@@ -5,5 +5,5 @@
     "val": 194,
     "test": 193
   },
-  "output_dir": "data\\shards"
+  "shard_size_rows": 50000
 }

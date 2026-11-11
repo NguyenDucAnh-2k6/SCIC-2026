@@ -12,7 +12,7 @@ sys.path.insert(0, str(repo_root))
 sys.path.insert(0, str(repo_root / "src"))
 
 import uvicorn
-from src.classtwin.utils.logging import get_logger
+from classtwin.utils.logging import get_logger
 
 logger = get_logger("scripts.run_api")
 

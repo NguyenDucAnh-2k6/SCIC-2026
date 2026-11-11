@@ -10,6 +10,7 @@ from ..policies.rules import RuleBasedPolicy
 from ..policies.cql import DiscreteCQL
 from ..twin.classroom_env import ClassroomDigitalTwinEnv
 from ..twin.scenarios import counterfactual_twin_rollout
+from ..data.telemetry_state import build_state_vector, STATE_DIM_EXTENDED, STATE_DIM_LEGACY
 from .state_store import ClassroomStateStore
 from ..utils.logging import get_logger
 
@@ -19,6 +20,7 @@ class DecisionSupportEngine:
     """
     Implements Algorithm 4 (Online Inference & Pedagogical Decision Support Flow).
     Coordinates real-time ingestion, state cache, safe fallback, CQL policy, and digital twin simulation.
+    Features robust tolerance for missing telemetry fields via empirical prior imputation.
     """
     def __init__(
         self,
@@ -26,7 +28,8 @@ class DecisionSupportEngine:
         cql_policy: Optional[DiscreteCQL] = None,
         irl_policy: Optional[DiscreteCQL] = None,
         min_coverage_threshold: float = 0.60,
-        max_uncertainty_threshold: float = 0.45
+        max_uncertainty_threshold: float = 0.45,
+        d_state: Optional[int] = None
     ):
         self.state_store = state_store
         self.cql_policy = cql_policy
@@ -34,6 +37,16 @@ class DecisionSupportEngine:
         self.min_coverage = min_coverage_threshold
         self.max_uncertainty = max_uncertainty_threshold
         self.rule_policy = RuleBasedPolicy()
+
+        # Detect expected state dimension from policy network
+        if d_state is not None:
+            self.d_state = d_state
+        elif cql_policy is not None and hasattr(cql_policy, "q_net"):
+            self.d_state = cql_policy.q_net.net[0].in_features
+        elif irl_policy is not None and hasattr(irl_policy, "q_net"):
+            self.d_state = irl_policy.q_net.net[0].in_features
+        else:
+            self.d_state = STATE_DIM_EXTENDED
 
     def generate_recommendation(
         self,
@@ -43,10 +56,12 @@ class DecisionSupportEngine:
         current_workload: float = 4.0,
         run_simulation_rollout: bool = True,
         env: Optional[ClassroomDigitalTwinEnv] = None,
-        policy_mode: str = "cql_explicit"
+        policy_mode: str = "cql_explicit",
+        custom_telemetry: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Executes online recommendation pipeline.
+        Tolerant to missing telemetry fields when deployed to third-party LMS/client APIs.
         """
         start_time = time.perf_counter()
         decision_id = f"dec_{class_id}_{int(time.time() * 1000)}"
@@ -77,11 +92,13 @@ class DecisionSupportEngine:
             self.state_store.record_decision(decision_id, rec)
             return rec
 
-        # 2. Formulate State Vector
+        # 2. Formulate Robust Multi-Dimensional State Vector
         if env is not None:
+            # Sync target state dimension
+            env.d_state = self.d_state
             state_vec = env.get_state_vector()
-            current_att = float(state_vec[5])
-            current_fat = float(state_vec[6])
+            current_att = float(state_vec[5]) if len(state_vec) > 5 else 0.75
+            current_fat = float(state_vec[7]) if len(state_vec) > 7 else (float(state_vec[6]) if len(state_vec) > 6 else 0.20)
             valid_mask = get_valid_action_mask(time_remaining_minutes, env.cumulative_workload)
             coverage = 1.0
             uncertainty = 0.05
@@ -92,22 +109,24 @@ class DecisionSupportEngine:
                 "n_enrolled": len(env.students)
             }
         else:
-            current_att = 0.75
-            current_fat = 0.20
-            state_vec = np.array([
-                summary["mean_mastery"],
-                summary["q25_mastery"],
-                summary["q75_mastery"],
-                0.02,  # variance
-                max(0.0, 0.40 - summary["q25_mastery"]),  # rho_low proxy
-                current_att,
-                current_fat,
-                0.65,  # CO2
-                0.80,  # Temp
-                0.45,  # Noise
-                time_remaining_minutes / 180.0,
-                0.0    # last act
-            ], dtype=np.float32)
+            # Construct from store summary and custom telemetry with missingness imputation
+            merged_telemetry = {
+                "mean_mastery": summary.get("mean_mastery", 0.55),
+                "q25_mastery": summary.get("q25_mastery", 0.40),
+                "q75_mastery": summary.get("q75_mastery", 0.70),
+                "time_remaining_norm": time_remaining_minutes / 180.0,
+                "teacher_workload_norm": current_workload / 20.0
+            }
+            if custom_telemetry:
+                merged_telemetry.update(custom_telemetry)
+
+            state_vec, _, feat_dict = build_state_vector(
+                telemetry=merged_telemetry,
+                d_state=self.d_state,
+                episode_duration_minutes=180.0
+            )
+            current_att = feat_dict.get("mean_attention", 0.75)
+            current_fat = feat_dict.get("session_fatigue_rate", 0.20)
             valid_mask = get_valid_action_mask(time_remaining_minutes, current_workload)
 
         # Check Safe Fallback conditions
@@ -174,7 +193,11 @@ class DecisionSupportEngine:
         # 5. Counterfactual Simulation Rollout (What-if projection)
         rollout_stats = {}
         if run_simulation_rollout:
-            sim_env = ClassroomDigitalTwinEnv(cohort_size=summary["n_enrolled"], seed=42)
+            sim_env = ClassroomDigitalTwinEnv(
+                cohort_size=summary.get("n_enrolled", 53),
+                d_state=self.d_state,
+                seed=42
+            )
             sim_env.reset()
             rollout_stats = counterfactual_twin_rollout(
                 base_env=sim_env,

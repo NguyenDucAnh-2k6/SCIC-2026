@@ -1,5 +1,5 @@
-from src.classtwin.data.schemas import Attempt, Event, ContentItem, TeacherDecision, ProvenanceEnum
-from src.classtwin.data.adapters import adapt_kt1_row, adapt_question_row, extract_user_id_from_path
+from classtwin.data.schemas import Attempt, Event, ContentItem, TeacherDecision, ProvenanceEnum
+from classtwin.data.ednet.adapter import adapt_kt1_row, adapt_question_row, extract_user_id_from_path
 
 def test_extract_user_id():
     path = "KT1/u246317.csv"

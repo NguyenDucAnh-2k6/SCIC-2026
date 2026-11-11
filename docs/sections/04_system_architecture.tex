@@ -1,0 +1,46 @@
+\section{Kiến trúc Hệ thống, Dữ liệu và Pipeline Triển khai}\label{sec:kien-truc-ky-thuat}
+
+\subsection{Thiết kế Phân tầng Edge-to-Cloud}\label{subsec:edge-to-cloud}
+Để bảo đảm tính khả thi khi vận hành tại các trường đại học mà không đòi hỏi nâng cấp toàn bộ hạ tầng mạng, ClassTwin áp dụng kiến trúc phân tầng \textbf{Edge-to-Cloud} tối ưu (Hình~\ref{fig:architecture}):
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tcolorbox}[colback=white, colframe=TealPrimary, boxrule=1pt, arc=3pt, width=0.98\textwidth]
+    \small
+    \textbf{[TẦNG 1: PHÒNG HỌC THỰC TẾ -- EDGE LAYER]}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Cảm biến Vi khí hậu IoT:} Đo nồng độ $\text{CO}_2$ (ppm), nhiệt độ phòng ($^\circ\text{C}$), và độ ồn môi trường tổng hợp ($\text{dB}$). Truyền dữ liệu qua sóng BLE/Zigbee nội bộ.
+      \item \textbf{Classroom Edge Gateway (Raspberry Pi 4 / Intel NUC mini):} Tiếp nhận dữ liệu cảm biến, đồng bộ timestamp NTP. Thực hiện lọc nhiễu, mã hóa một chiều danh tính sinh viên (\textit{Privacy Filter}) và đệm dữ liệu cục bộ khi mất mạng.
+      \item \textbf{Teacher Tablet / Laptop App:} Ứng dụng giao diện giảng viên hiển thị Dashboard trạng thái lớp học và các nút bấm tương tác 1 chạm (Duyệt / Tùy biến / Từ chối).
+    \end{itemize}
+    \vspace{1mm}
+    \centering\textbf{$\big\Downarrow$ Kết nối Bảo mật Mạng Trường học / SSL RESTful \& gRPC API $\big\Downarrow$}
+    \vspace{1mm}
+    \raggedright
+    \textbf{[TẦNG 2: MÁY CHỦ TRƯỜNG / CLOUD COMPUTING ENGINE]}
+    \begin{itemize}[leftmargin=1.5em]
+      \item \textbf{Data Lakehouse \& Parquet Shard Store:} Lưu trữ dữ liệu lịch sử chuẩn hóa theo định dạng cột nén Parquet phân mảnh theo session và học kỳ.
+      \item \textbf{State Estimator \& Digital Twin Rollout Service:} Dịch vụ tính toán hiệu năng cao chạy mô hình GRU và giả lập phản thực Monte-Carlo. Bộ nhớ đệm trạng thái Redis In-Memory bảo đảm độ trễ phản hồi dưới 1 giây.
+      \item \textbf{Offline RL Training Pipeline:} Định kỳ tái huấn luyện chính sách CQL theo lô (batch retraining) trên máy chủ GPU chuyên dụng (hoặc phiên bản Kaggle/Colab GPU trong giai đoạn nghiên cứu).
+      \item \textbf{LMS Connector Hub:} Tích hợp chuẩn LTI (Learning Tools Interoperability) chuẩn hóa vào các nền tảng Moodle, Canvas, Blackboard, Microsoft Teams Education.
+    \end{itemize}
+  \end{tcolorbox}
+  \caption{Sơ đồ kiến trúc phân bổ Edge-to-Cloud của giải pháp ClassTwin}\label{fig:architecture}
+\end{figure}
+
+\subsection{Quy trình Xử lý Dữ liệu và Pipeline Huấn luyện Liên tục}\label{subsec:training-pipeline}
+Hệ thống ClassTwin vận hành một luồng chuyển hóa dữ liệu khép kín từ các nguồn dữ liệu học tập thực tế đến các mô hình phục vụ trực tuyến (Inference API):
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{Ingestion \& Validation Layer:} Tiếp nhận và làm sạch dữ liệu tương tác thô thông qua các bộ chuyển đổi chuẩn mực (\textit{Data Adapters}), kiểm tra tính toàn vẹn của schema và loại bỏ rò rỉ dữ liệu (\textit{data leakage}).
+  \item \textbf{Feature Extraction \& Sharding Store:} Trích xuất chuỗi lịch sử học tập, tính toán nhịp độ nhận thức và phân mảnh dữ liệu thành các tệp nén Parquet phục vụ huấn luyện phân tán.
+  \item \textbf{State Estimation Training (Offline Phase 1):} Định kỳ huấn luyện mô hình học sâu GRU-DKT trên máy chủ GPU để cập nhật không gian biểu diễn tri thức nền tảng.
+  \item \textbf{Constrained Offline RL Optimization (Offline Phase 2):} Sử dụng thuật toán Discrete CQL để tối ưu hóa chính sách sư phạm an toàn trên tập quỹ đạo chuyển dịch thực tế và mô phỏng.
+  \item \textbf{Online Serving \& Continuous Feedback (Inference Phase):} Triển khai mô hình thông qua FastAPI và bộ đệm trạng thái Redis In-Memory; tiếp nhận quyết định phản hồi của giảng viên (\textit{Human-in-the-Loop}) để bổ sung vào kho dữ liệu tái huấn luyện.
+\end{enumerate}
+\noindent\textit{Lưu ý:} Toàn bộ danh mục, cấu trúc lược đồ (schema) và phân tích vai trò chuyên sâu của 7 bộ dữ liệu học thuật quốc tế được trình bày tập trung tại \textbf{Phần~\ref{sec:data-schemas}}.
+
+\newpage
+
+% =========================================================================
+% PHẦN V: KHẢO SÁT VÀ ĐẶC TẢ TOÀN DIỆN SCHEMAS CÁC BỘ DỮ LIỆU ĐA NGUỒN
+% =========================================================================

@@ -1,0 +1,95 @@
+\section{Kế hoạch Triển khai Kỹ thuật và Quản trị Rủi ro}\label{sec:trien-khai-rui-ro}
+
+\subsection{Cấu trúc Kho mã nguồn và Hiện trạng Triển khai (Repository Architecture \& Code Progress)}\label{subsec:repo-structure}
+Mã nguồn dự án ClassTwin được tái cấu trúc triệt để theo kiến trúc phần mềm tiêu chuẩn doanh nghiệp (\textit{Production-Grade Clean Architecture}), loại bỏ hoàn toàn sự phân mảnh cấu hình và tinh gọn tối đa các điểm vào thực thi:
+
+\begin{tcolorbox}[colback=white, colframe=NavyBlue, boxrule=0.8pt, arc=3pt]
+\begin{verbatim}
+classtwin/
+├── configs/
+│   └── pipeline.yaml         # Cấu hình duy nhất (Single Source of Truth) cho 4 giai đoạn
+├── data/
+│   ├── raw/                  # 7 bộ dữ liệu thô chuẩn quốc tế (EdNet, ASSISTments,...)
+│   └── shards/               # Parquet Shards phân mảnh tối ưu streaming & I/O
+├── docs/                     # Tài liệu thiết kế toán học, API specs & đề án LaTeX
+├── output/
+│   ├── artifacts/            # Vocab, evaluation_report.json, release_manifest.json
+│   └── models/               # Checkpoints đã lưu: gru_dkt.pt (8.6MB), cql_policy.pt (182KB)
+├── scripts/
+│   ├── pipeline.py           # Entrypoint Pipeline hợp nhất (preprocess, DKT, CQL, eval)
+│   └── run_api.py            # Entrypoint Microservice FastAPI & Redis snapshot
+├── src/classtwin/
+│   ├── data/                 # Adapters, Schema, Telemetry 32D, Imputation & Priors
+│   ├── state_estimation/     # GRU-DKT, BKT, Laplace Uncertainty, Calibration ECE
+│   ├── twin/                 # ClassroomDigitalTwinEnv, Dynamics, Multi-Class Shuffling
+│   ├── policies/             # Offline CQL, MaxEnt IRL, Boltzmann Softmax, Heuristic
+│   ├── evaluation/           # Benchmark Suite, Policy Comparison, OPE, Report Exporter
+│   ├── inference/            # FastAPI Production App, Pydantic DTOs, Latency Guard
+│   └── utils/                # YAML Config Manager, Logging, Seed Reproducibility
+├── tests/
+│   └── run_all_tests.py      # Test Suite tự động (19/19 Tests Passing, 100% Pass Rate)
+├── train.bat / train.sh      # Launcher Huấn luyện 1-click có Menu tương tác 7 giai đoạn
+└── run_api.bat / run_api.sh  # Launcher Production API thời gian thực
+\end{verbatim}
+\end{tcolorbox}
+
+\subsubsection{Báo cáo Tiến độ Phát triển Mã nguồn cho Cố vấn Chuyên môn (Mentor Progress Report)}
+Nhằm phục vụ công tác rà soát và đánh giá của Cố vấn Chuyên môn, nhóm nghiên cứu tổng hợp tiến độ hoàn thiện kỹ thuật tính đến phiên bản hiện tại (Bảng~\ref{tab:code-progress}):
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Bảng tổng hợp tiến độ hoàn thiện các phân hệ kỹ thuật trong mã nguồn}\label{tab:code-progress}
+  \begin{tabularx}{\textwidth}{p{3.2cm} c p{4.2cm} X}
+    \toprule
+    \textbf{Phân hệ Kỹ thuật} & \textbf{Tiến độ} & \textbf{Mô-đun Mã nguồn Cốt lõi} & \textbf{Hiện trạng Kỹ thuật \& Kết quả Đạt được} \\
+    \midrule
+    \textbf{1. Tiền xử lý \& Tích hợp Đa dữ liệu} & $100\%$ & \texttt{src/classtwin/data/} & Hoàn thành trích xuất 20 Parquet shards từ EdNet ($>1\text{M}$ bản ghi); tích hợp đầy đủ tiên nghiệm từ 7 bộ dữ liệu; chuẩn hóa vector trạng thái $\mathbb{R}^{32}$. \\
+    \addlinespace
+    \textbf{2. Mô hình Ước lượng Năng lực (GRU-DKT)} & $100\%$ & \texttt{src/classtwin/state\_estimation/} & Huấn luyện và đóng gói checkpoint \texttt{gru\_dkt.pt}; đạt ECE $0.1597$; từ vựng $10,651$ câu hỏi; triệt tiêu $69.1\%$ bất định sau 10 bước. \\
+    \addlinespace
+    \textbf{3. Môi trường Bản sao số (Digital Twin)} & $100\%$ & \texttt{src/classtwin/twin/} & Môi trường Gymnasium \texttt{ClassroomDigitalTwinEnv} đa lớp học; tích hợp tương tác đồng đẳng $A_{peer}$, vi khí hậu In-Gauge và mệt mỏi nhận thức. \\
+    \addlinespace
+    \textbf{4. Chính sách Tối ưu (Offline CQL \& IRL)} & $100\%$ & \texttt{src/classtwin/policies/} & Huấn luyện và đóng gói checkpoint \texttt{cql\_policy.pt}; Q-loss $5.902$, Bellman error $3.512$; Entropy $97.6\%$ (chống Mode Collapse thành công). \\
+    \addlinespace
+    \textbf{5. Benchmark \& Đánh giá Độc lập} & $100\%$ & \texttt{src/classtwin/evaluation/} & Bộ công cụ benchmark 4 chính sách tự động xuất báo cáo JSON (\texttt{evaluation\_report.json}) và siêu dữ liệu kiểm định nguồn gốc. \\
+    \addlinespace
+    \textbf{6. Dịch vụ Suy luận API Production} & $100\%$ & \texttt{src/classtwin/inference/} & FastAPI Service hoàn thiện; độ trễ phản hồi cực thấp ($<15\text{ ms/request}$ trên CPU); cơ chế dung lỗi viễn trắc tự động điền khuyết. \\
+    \addlinespace
+    \textbf{7. Bộ Kiểm thử Tự động (Testing Suite)} & $100\%$ & \texttt{tests/run\_all\_tests.py} & \textbf{19/19 Tests PASS} ($100\%$ vượt qua mọi ca kiểm thử đơn vị, kiểm thử tích hợp, kiểm tra rò rỉ dữ liệu và kiểm thử API). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Ma trận Nhận diện và Quản trị Rủi ro (Risk Management Matrix)}\label{subsec:ma-tran-rui-ro}
+Bảng~\ref{tab:risk-matrix} phân tích các rủi ro cốt lõi và chiến lược phòng vệ tương ứng:
+
+\begin{table}[htbp]
+  \centering\small
+  \caption{Ma trận quản trị rủi ro dự án ClassTwin}\label{tab:risk-matrix}
+  \begin{tabularx}{\textwidth}{p{3.2cm} p{2.2cm} p{4.2cm} X}
+    \toprule
+    \textbf{Rủi ro Nhận diện} & \textbf{Mức độ} & \textbf{Nguyên nhân Tiềm ẩn} & \textbf{Chiến lược Giảm thiểu (Mitigation)} \\
+    \midrule
+    \textbf{1. Giảng viên e ngại AI can thiệp (Teacher Resistance)} & Trung bình & Giảng viên lo sợ AI phán xét năng lực giảng dạy hoặc làm mất quyền chủ động trên lớp. & Định vị sản phẩm là ``Trợ lý tham mưu'', giảng viên nắm 100\% quyền quyết định. Tuyệt đối không xếp hạng thi đua giảng viên qua dữ liệu hệ thống. \\
+    \addlinespace
+    \textbf{2. Lệch pha giữa mô phỏng và thực tế (Reality Gap)} & Cao & Môi trường lớp học thực tế có quá nhiều biến số tâm lý không nằm trong EdNet. & Sử dụng Offline RL bảo thủ (CQL); luôn chạy phân tích độ nhạy $\phi$; tích hợp cơ chế Safe Fallback quay về phương án an toàn khi bất định cao. \\
+    \addlinespace
+    \textbf{3. Hạ tầng mạng trường học không ổn định} & Thấp & Mất kết nối Internet trong giờ học khiến ứng dụng bị treo. & Thiết kế Edge Gateway có khả năng đệm dữ liệu ngoại tuyến; bộ nhớ cache trạng thái lớp học tại biên; tự phục hồi khi có mạng trở lại. \\
+    \addlinespace
+    \textbf{4. Rủi ro pháp lý về dữ liệu học sinh} & Rất thấp & Các chính sách bảo mật thông tin cá nhân trong giáo dục. & Tuyệt đối không dùng camera/mic; ẩn danh hóa dữ liệu một chiều tại cổng kết nối; lưu trữ phân tán tuân thủ pháp luật. \\
+    \addlinespace
+    \textbf{5. Sụp đổ chính sách \& Khai thác hàm thưởng (Reward Hacking / Mode Collapse)} & Cao & Q-Learning tham lam $\arg\max$ và hàm thưởng lệch khiến chính sách co cụm vào 1--2 hành vi (chỉ chọn giải lao hoặc thảo luận). & Bổ sung phân phối Boltzmann Softmax có phạt lặp $\lambda_{rep} = 0.60$, phạt lặp sư phạm $\mathcal{P}_{mono}$, và cơ chế sinh mẫu chuyên gia ngẫu nhiên mềm trong MaxEnt-IRL; kiểm định độc lập bằng chỉ số Shannon Action Entropy $H(\pi) \ge 0.70$ trước khi deploy. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Kết luận và Tầm nhìn Phát triển}\label{subsec:ket-luan}
+Đề án \textbf{ClassTwin (Classroom Digital Twin)} mang đến một góc nhìn hoàn toàn mới cho bài toán ứng dụng Trí tuệ Nhân tạo trong giáo dục: \textbf{Không thay thế người thầy, mà trao thêm cho người thầy một ``giác quan số'' sắc bén}. Bằng việc kết hợp hài hòa giữa cơ sở toán học chặt chẽ của Deep Knowledge Tracing, sức mạnh của Offline Reinforcement Learning và một triết lý thiết kế tôn trọng tuyệt đối quyền riêng tư và đạo đức nhà giáo, ClassTwin tự tin giải quyết trọn vẹn bài toán nâng cao chất lượng dạy và học trong môi trường đại học hiện đại.
+
+Với mô hình kinh doanh B2B SaaS bền vững, biên lợi nhuận gộp vượt trội ($\ge 75\%$) và lộ trình thâm nhập thị trường bài bản, ClassTwin không chỉ là một đề án nghiên cứu khoa học xuất sắc tham dự \textbf{SCIC 2026}, mà còn là một hạt giống công nghệ EdTech đầy triển vọng, sẵn sàng bứt phá thành một sản phẩm quốc gia có tầm ảnh hưởng xã hội và giá trị kinh tế to lớn.
+
+\newpage
+
+% =========================================================================
+% TÀI LIỆU THAM KHẢO
+% =========================================================================

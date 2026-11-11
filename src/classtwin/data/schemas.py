@@ -17,6 +17,14 @@ class ContentItem(BaseModel):
     correct_answer: Optional[str] = None
     available_at_ms: Optional[int] = None
 
+    @property
+    def tags(self) -> List[int]:
+        return self.skill_ids
+
+    @property
+    def question_id(self) -> str:
+        return self.item_id
+
 class Event(BaseModel):
     event_id: str
     student_id: str
@@ -126,4 +134,8 @@ class ClassroomCohort(BaseModel):
     mean_first_attempt_accuracy: float = 0.0
     mean_hints_per_problem: float = 0.0
     mean_response_time_ms: float = 0.0
+
+# Schema Aliases
+InteractionAttempt = Attempt
+QuestionMetadata = ContentItem
 

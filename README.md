@@ -98,7 +98,7 @@ Toàn bộ tham số của cả 3 giai đoạn (Tiền xử lý $\to$ Estimator 
 
 ### 3. Tham số Chính sách Offline RL (`policy:`)
 * `policy_type`: Thuật toán Offline RL (`cql` - Discrete Conservative Q-Learning).
-* `d_state`: Chiều vector trạng thái lớp học $\mathbf{x}_t$ (**12 chiều chuẩn hóa**).
+* `d_state`: Chiều vector trạng thái lớp học $\mathbf{x}_t$ (**32 chiều đa nguồn hợp nhất**, tương thích dung sai khi khuyết trường).
 * `cql_alpha`: Hệ số phạt bảo thủ CQL dìm giá trị Q ngoài phân phối (mặc định: `1.0`).
 * `gamma_base`: Hệ số chiết khấu cơ sở (`0.99`).
 * `tau_seconds`: Hằng số thời gian chuẩn hóa bước chuyển Bán Markov (`60.0` giây).
@@ -106,61 +106,75 @@ Toàn bộ tham số của cả 3 giai đoạn (Tiền xử lý $\to$ Estimator 
 
 ### 4. Tham số Môi trường Bản sao số Lớp học Đa nguồn (`twin:`)
 * `use_real_data`: Kích hoạt nạp dữ liệu thực địa đa nguồn (`true` / `false`).
-* `class_id`: ID lớp học thực tế trích xuất từ ASSISTments (mặc định: `12262` gồm 53 học sinh).
+* `class_id`: ID lớp học thực tế trích xuất từ ASSISTments (mặc định: `12262` gồm 53 học sinh, hỗ trợ domain randomization qua 250 lớp).
 * `default_cohort_size`: Sĩ số lớp học mô phỏng (mặc định: `53`).
-* `episode_duration_minutes`: Thời lượng tiết học (chuẩn: `60` phút).
+* `episode_duration_minutes`: Thời lượng tiết học (chuẩn: `60`–`90` phút).
 * `mc_rollout_samples`: Số mẫu Monte-Carlo khi chạy kịch bản phản thực What-if (`30`).
 
 ---
 
-## ⚡ 1 Entrypoint Duy nhất Cho Toàn bộ Chu trình: `scripts/pipeline.py`
+## 🏗️ Kiến trúc Tinh gọn & 2 Entrypoints Duy nhất trong `scripts/`
 
-Hệ thống cung cấp một điểm thực thi duy nhất **[`scripts/pipeline.py`](file:///d:/SCIC%202026/SCIC-2026/scripts/pipeline.py)** tự động điều phối khép kín luồng làm việc 4 tầng:
-```
-[Tiền xử lý Zip -> Parquet] -> [Huấn luyện GRU-DKT] -> [Xây dựng Env Đa nguồn] -> [Huấn luyện CQL Policy] -> [Release Manifest]
-```
+Toàn bộ logic huấn luyện, tiền xử lý và đánh giá đã được đóng gói thành các module chuẩn trong `src/classtwin/`:
+* `src/classtwin/data/`: Mỗi bộ dữ liệu được tổ chức thành 1 package chuyên trách (`assistments/`, `assistments_affect/`, `bridge_to_algebra/`, `ednet/`, `in_gauge_engage/`, `oulad/`, `sociopatterns/`).
+* `src/classtwin/data/orchestrator.py`: Điều phối trích xuất **vector trạng thái 32 chiều $\mathbf{x}_t \in \mathbb{R}^{32}$** với cơ chế tự động bù khuyết (*missing telemetry imputation*).
+* `src/classtwin/data/preprocessing.py`: Trích xuất shards Parquet và precompute empirical priors cho 7 datasets.
+* `src/classtwin/state_estimation/trainer.py`: Huấn luyện và hiệu chuẩn mạng GRU-DKT.
+* `src/classtwin/policies/trainer.py`: Mô phỏng Digital Twin và huấn luyện Offline RL (CQL / MaxEnt-IRL) kèm bộ đệm cache tensor transition.
+* `src/classtwin/evaluation/benchmark.py`: Đánh giá toàn diện ECE, Brier, Shannon Action Entropy và chẩn đoán Reward Hacking.
+
+Thư mục `scripts/` hiện **chỉ duy nhất giữ lại 2 entrypoints**:
+1. **[`scripts/pipeline.py`](file:///d:/SCIC%202026/SCIC-2026/scripts/pipeline.py)**: Master Pipeline CLI linh hoạt hỗ trợ chạy trọn gói hoặc từng giai đoạn (`--stage`), tích hợp cơ chế cache tensor tại `data/cache/`.
+2. **[`scripts/run_api.py`](file:///d:/SCIC%202026/SCIC-2026/scripts/run_api.py)**: Khởi chạy FastAPI Backend Service và Vite React Real-time Dashboard.
+
+---
+
+## ⚡ Hướng dẫn Thực thi với `scripts/pipeline.py`
 
 ### 1. Chạy Toàn bộ Pipeline Mặc định (Full Pipeline Run)
 ```bash
 python scripts/pipeline.py
+# Hoặc sử dụng script launcher:
+./train.sh          # Linux / macOS
+train.bat           # Windows
 ```
-> **Cơ chế Tự động Nhận diện (Smart Auto-detection):** Nếu hệ thống phát hiện thư mục `data/shards/` đã có sẵn các file Parquet, script sẽ **tự động bỏ qua Stage 1 (Tiền xử lý)** và chuyển ngay sang huấn luyện GRU-DKT và CQL để tiết kiệm thời gian!
+> **Cơ chế Tự động Nhận diện (Smart Auto-detection):** Nếu phát hiện thư mục `data/shards/` đã có sẵn Parquet shards, script sẽ tự động bỏ qua bước tiền xử lý ZIP và chuyển sang huấn luyện GRU-DKT và CQL.
 
-### 2. Chạy Nhanh để Kiểm thử trên CPU (Fast Smoke Run)
-Chạy thử 2 shard dữ liệu, 50 sinh viên, 1 epoch DKT, 5 episode mô phỏng trong vòng 10 giây:
+### 2. Chạy Linh hoạt Theo Từng Giai đoạn (`--stage`)
+Hệ thống cho phép chạy độc lập từng giai đoạn tùy theo nhu cầu:
 ```bash
-python scripts/pipeline.py --num-shards 2 --max-students 50 --estimator-epochs 1 --policy-episodes 5 --policy-steps 10
+# Giai đoạn 1: Chỉ tiền xử lý và trích xuất priors từ 7 datasets
+python scripts/pipeline.py --stage preprocess
+
+# Giai đoạn 2: Chỉ huấn luyện mô hình GRU-DKT State Estimator
+python scripts/pipeline.py --stage estimator --estimator-epochs 5
+
+# Giai đoạn 3: Chỉ huấn luyện Chính sách Offline RL (Discrete CQL)
+python scripts/pipeline.py --stage policy --reward-mode explicit --policy-episodes 40 --policy-steps 150
+
+# Giai đoạn 3 (Nâng cao): Huấn luyện Chính sách MaxEnt Inverse RL (IRL)
+python scripts/pipeline.py --stage policy --reward-mode irl --policy-episodes 40 --policy-steps 150
+
+# Giai đoạn 4: Chỉ chạy Benchmark Đánh giá Mô hình & Shannon Entropy
+python scripts/pipeline.py --stage evaluate
 ```
 
-### 3. Huấn luyện Quy mô Lớn trên GPU (Production Run)
-Huấn luyện trên toàn bộ shards Parquet và 100 phiên mô phỏng lớp học:
+> **Cơ chế Caching Rollout Transitions:** Dữ liệu rollouts từ mô phỏng Digital Twin được lưu trữ tự động tại `data/cache/rollout_transitions_{reward_mode}_dim32.pt`. Ở các lần chạy sau, hệ thống sẽ tự động kích hoạt `[CACHE HIT]`, giúp huấn luyện RL ngay lập tức (<0.1s) mà không cần mô phỏng lại! Dùng cờ `--no-cache` nếu muốn ép mô phỏng lại từ đầu.
+
+### 3. Chạy Nhanh để Kiểm thử trên CPU (Fast Smoke Run)
+Chạy thử 2 shards dữ liệu, 50 sinh viên, 1 epoch DKT, 5 episodes mô phỏng (~10 giây):
 ```bash
-python scripts/pipeline.py --num-shards -1 --estimator-epochs 10 --policy-episodes 100 --policy-steps 500
+python scripts/pipeline.py --stage all --num-shards 2 --max-students 50 --estimator-epochs 1 --policy-episodes 5 --policy-steps 10
+# Hoặc:
+./train.sh smoke    # Linux / macOS
+train.bat smoke     # Windows
 ```
 
-### 4. Tùy chọn Bỏ qua hoặc Ép chạy từng Giai đoạn
-* `--force-preprocess`: Ép nén lại toàn bộ Parquet shards từ file ZIP.
-* `--skip-preprocess`: Bỏ qua tiền xử lý dữ liệu.
-* `--skip-estimator`: Bỏ qua huấn luyện GRU-DKT (sử dụng checkpoint có sẵn).
-* `--skip-policy`: Bỏ qua huấn luyện chính sách CQL.
-* `--use-synthetic-twin`: Chuyển sang mô phỏng thuần tham số Beta thay vì dữ liệu đa nguồn thật.
-
-### 5. Huấn luyện Lại Riêng Chính sách CQL & Inverse RL
-Khi bạn đã có sẵn checkpoint GRU-DKT và chỉ muốn tinh chỉnh hoặc huấn luyện lại chính sách sư phạm an toàn:
+### 4. Huấn luyện Quy mô Lớn trên GPU (Production Run)
+Huấn luyện trên toàn bộ 1.521 shards Parquet (>76M lượt tương tác) và 100 phiên mô phỏng:
 ```bash
-# Huấn luyện CQL với hàm thưởng hiển thị cải tiến
-python scripts/train_policy.py --reward-mode explicit --episodes 40 --train-steps 150
-
-# Huấn luyện Inverse RL (MaxEnt IRL) với bộ sinh chuyên gia ngẫu nhiên mềm
-python scripts/train_policy.py --reward-mode irl --episodes 40 --train-steps 150
+python scripts/pipeline.py --stage all --num-shards -1 --estimator-epochs 10 --policy-episodes 100 --policy-steps 500
 ```
-
-### 6. Đánh giá Độc lập & Kiểm tra Reward Hacking (Pre-Deployment Benchmark)
-Đo lường toàn diện chất lượng mô hình ước lượng (Calibration, Uncertainty, Dynamic Range) và chẩn đoán hiện tượng Mode Collapse / Reward Hacking của các chính sách:
-```bash
-python scripts/evaluate_models.py
-```
-> **Chỉ số Sức khỏe Sư phạm (Shannon Action Entropy):** Đo độ đa dạng hoạt động $H(\pi) = -\sum_a P(a) \log_2 P(a)$ trên môi trường Digital Twin. Tự động gắn cờ cảnh báo `⚠️ YES (Hacked)` nếu chính sách bị co cụm vào 1--2 lựa chọn hoặc entropy $< 0.40$. Xuất báo cáo JSON tại `output/artifacts/evaluation_report.json`.
 
 ---
 
@@ -168,33 +182,25 @@ python scripts/evaluate_models.py
 
 ### Cài đặt Môi trường
 ```bash
-# Cài đặt gói ở chế độ phát triển
 pip install -e .
 ```
 
-### Chạy Bộ Kiểm thử
+### Chạy Bộ Kiểm thử Toàn diện (19/19 Unit Tests)
 ```bash
-python -c "
-import sys, importlib.util
-from pathlib import Path
-sys.path.insert(0, str(Path('.').resolve()))
-sys.path.insert(0, str(Path('src').resolve()))
-for tf in ['tests/test_schemas.py', 'tests/test_state_estimation.py', 'tests/test_twin.py', 'tests/test_cql.py', 'tests/test_inference.py']:
-    spec = importlib.util.spec_from_file_location(Path(tf).stem, tf)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    for a in dir(mod):
-        if a.startswith('test_'): getattr(mod, a)()
-print('13/13 tests passed!')
-"
+python tests/run_all_tests.py
 ```
+> Kiểm thử khép kín 6 modules: Schemas & Multi-tier EdNet adapter, Digital Twin dynamics, Offline CQL policy, GRU-DKT state estimation, Inference API engine, và Digital Twin 32D rollout evolution.
 
-### Khởi chạy Server API Hỗ trợ Quyết định (FastAPI Backend)
+### Khởi chạy Server API & React Dashboard
 ```bash
 python scripts/run_api.py --dev
+# Hoặc:
+./run_api.sh        # Linux / macOS
+run_api.bat         # Windows
 ```
-Truy cập tài liệu Swagger UI tương tác tại: [http://localhost:8000/docs](http://localhost:8000/docs)
-Lệnh này tự động mở giao diện UI React ở [http://localhost:3000](http://localhost:3000).
+* **FastAPI Backend (Swagger UI):** [http://localhost:8000/docs](http://localhost:8000/docs)
+* **React Digital Twin Dashboard:** [http://localhost:3000](http://localhost:3000)
+
 Các API endpoints sẵn sàng phục vụ giảng đường:
 * `POST /v1/events:batch`: Tiếp nhận luồng sự kiện tương tác của sinh viên.
 * `GET /v1/classes/{class_id}/state`: Lấy snapshot trạng thái tổng hợp của lớp học (độ trễ $< 1\text{s}$).

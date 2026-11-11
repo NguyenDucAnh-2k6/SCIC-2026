@@ -44,8 +44,10 @@ cql_model_path = repo_root / "output" / "models" / "cql_policy.pt"
 cql_inst = None
 if cql_model_path.exists():
     try:
-        cql_inst = DiscreteCQL(d_state=12, num_actions=len(PEDAGOGICAL_ACTIONS), d_hidden=128)
-        cql_inst.q_net.load_state_dict(torch.load(cql_model_path, map_location="cpu"))
+        sd = torch.load(cql_model_path, map_location="cpu")
+        in_dim = sd["net.0.weight"].shape[1] if "net.0.weight" in sd else 12
+        cql_inst = DiscreteCQL(d_state=in_dim, num_actions=len(PEDAGOGICAL_ACTIONS), d_hidden=128)
+        cql_inst.q_net.load_state_dict(sd)
         cql_inst.q_net.eval()
     except Exception as e:
         cql_inst = None
@@ -55,8 +57,10 @@ irl_model_path = repo_root / "output" / "models" / "irl_cql_policy.pt"
 irl_inst = None
 if irl_model_path.exists():
     try:
-        irl_inst = DiscreteCQL(d_state=12, num_actions=len(PEDAGOGICAL_ACTIONS), d_hidden=128)
-        irl_inst.q_net.load_state_dict(torch.load(irl_model_path, map_location="cpu"))
+        sd_irl = torch.load(irl_model_path, map_location="cpu")
+        in_dim_irl = sd_irl["net.0.weight"].shape[1] if "net.0.weight" in sd_irl else 12
+        irl_inst = DiscreteCQL(d_state=in_dim_irl, num_actions=len(PEDAGOGICAL_ACTIONS), d_hidden=128)
+        irl_inst.q_net.load_state_dict(sd_irl)
         irl_inst.q_net.eval()
     except Exception as e:
         irl_inst = None
@@ -75,6 +79,7 @@ class RecommendationRequest(BaseModel):
     current_workload: float = 3.0
     run_simulation: bool = True
     policy_mode: str = "cql_explicit"
+    telemetry: Optional[Dict[str, Any]] = Field(default=None, description="Optional client telemetry features; missing fields are automatically imputed via calibrated empirical priors")
 
 class TeacherDecisionRequest(BaseModel):
     decision_id: str
@@ -153,7 +158,8 @@ def get_recommendation(req: RecommendationRequest):
         current_workload=req.current_workload,
         run_simulation_rollout=req.run_simulation,
         env=env_instance,
-        policy_mode=req.policy_mode
+        policy_mode=req.policy_mode,
+        custom_telemetry=req.telemetry
     )
     return rec
 
@@ -268,6 +274,12 @@ def demo_init_classroom(req: DemoInitRequest):
             "q75Mastery": summary["q75_mastery"],
             "meanAttention": float(np.mean([s.attention for s in env.students])),
             "meanFatigue": float(np.mean([s.fatigue for s in env.students])),
+            "edaStress": float(np.mean([s.eda_stress for s in env.students])),
+            "hrStrain": float(np.mean([s.hr_strain for s in env.students])),
+            "accRestlessness": float(np.mean([s.acc_restlessness for s in env.students])),
+            "peerClustering": float(env.peer_metrics.get("clustering_coef", 0.38)),
+            "vleActivity": float(env.oulad_priors.get("vle_click_intensity", 0.45)),
+            "stepErrorRate": float(np.mean([s.step_error_rate for s in env.students])),
             "timeRemainingMinutes": max(0.0, env.episode_duration_minutes - env.time_elapsed_minutes),
             "timeElapsedMinutes": float(env.time_elapsed_minutes),
             "workload": env.cumulative_workload,
@@ -329,6 +341,12 @@ def demo_step_classroom(req: DemoStepRequest):
             "q75Mastery": round(float(summary["q75_mastery"]), 3),
             "meanAttention": round(float(np.mean([s.attention for s in env.students])), 3),
             "meanFatigue": round(float(np.mean([s.fatigue for s in env.students])), 3),
+            "edaStress": round(float(np.mean([s.eda_stress for s in env.students])), 3),
+            "hrStrain": round(float(np.mean([s.hr_strain for s in env.students])), 3),
+            "accRestlessness": round(float(np.mean([s.acc_restlessness for s in env.students])), 3),
+            "peerClustering": round(float(env.peer_metrics.get("clustering_coef", 0.38)), 3),
+            "vleActivity": round(float(env.oulad_priors.get("vle_click_intensity", 0.45)), 3),
+            "stepErrorRate": round(float(np.mean([s.step_error_rate for s in env.students])), 3),
             "timeRemainingMinutes": time_rem,
             "timeElapsedMinutes": round(float(env.time_elapsed_minutes), 1),
             "workload": round(float(env.cumulative_workload), 1),

@@ -1,112 +1,100 @@
 {
-  "timestamp": 1792510099.6944754,
-  "gru_dkt": {
-    "num_parameters": 2457465,
-    "initial_mastery": 0.5224,
-    "post_correct_mastery": 0.6899,
-    "post_incorrect_mastery": 0.3661,
-    "mastery_responsiveness_delta": 0.3238,
-    "uncertainty_initial": 1.0003,
-    "uncertainty_post_10_obs": 0.3124,
-    "sample_ece": 0.3014,
-    "sample_brier": 0.0957
+  "timestamp": "2026-11-11 22:47:11Z",
+  "state_estimator": {
+    "num_parameters": 2143068,
+    "initial_mastery": 0.4972,
+    "post_correct_mastery": 0.475,
+    "post_incorrect_mastery": 0.4746,
+    "mastery_responsiveness_delta": 0.0004,
+    "uncertainty_initial": 1.0001,
+    "uncertainty_post_10_obs": 0.3093,
+    "sample_ece": 0.5099,
+    "sample_brier": 0.2657
   },
-  "policies": [
-    {
-      "policy": "Uniform Random",
-      "episodes": 10,
-      "total_steps": 220,
-      "action_distribution_pct": {
+  "policies": {
+    "Uniform Random": {
+      "policy_name": "Uniform Random",
+      "mean_cumulative_reward": -21.427,
+      "mean_delta_mastery": 0.006,
+      "mean_delta_q25_equity": 0.0062,
+      "mean_final_fatigue": 0.226,
+      "mean_max_fatigue": 0.367,
+      "fatigue_violation_rate": 0.0136,
+      "co2_violation_rate": 0.2727,
+      "action_entropy": 2.303,
+      "normalized_entropy": 0.992,
+      "dominant_action": "break (24.5%)",
+      "action_distribution": {
         "lecture": 19.5,
         "quiz": 17.3,
         "groupwork": 22.7,
         "discussion": 15.9,
         "break": 24.5
       },
-      "action_entropy_bits": 2.303,
-      "normalized_entropy": 0.992,
-      "dominant_action": "break (24.5%)",
-      "is_mode_collapsed": false,
-      "mean_cumulative_reward": -26.463,
-      "mean_delta_mastery": -0.349,
-      "mean_delta_q25": -0.321,
-      "mean_final_fatigue": 0.224,
-      "mean_max_fatigue": 0.366,
-      "mean_teacher_workload": 12.27,
-      "fatigue_violation_rate": 1.4,
-      "co2_violation_rate": 27.3
+      "mode_collapse": false
     },
-    {
-      "policy": "Expert Heuristic",
-      "episodes": 10,
-      "total_steps": 300,
-      "action_distribution_pct": {
+    "Expert Heuristic": {
+      "policy_name": "Expert Heuristic",
+      "mean_cumulative_reward": -1188.774,
+      "mean_delta_mastery": 0.0,
+      "mean_delta_q25_equity": 0.0,
+      "mean_final_fatigue": 0.0,
+      "mean_max_fatigue": 0.1,
+      "fatigue_violation_rate": 0.0,
+      "co2_violation_rate": 0.0,
+      "action_entropy": -0.0,
+      "normalized_entropy": -0.0,
+      "dominant_action": "break (100.0%)",
+      "action_distribution": {
         "lecture": 0.0,
-        "quiz": 83.3,
+        "quiz": 0.0,
         "groupwork": 0.0,
         "discussion": 0.0,
-        "break": 16.7
+        "break": 100.0
       },
-      "action_entropy_bits": 0.65,
-      "normalized_entropy": 0.28,
-      "dominant_action": "quiz (83.3%)",
-      "is_mode_collapsed": true,
-      "mean_cumulative_reward": -86.866,
-      "mean_delta_mastery": -0.322,
-      "mean_delta_q25": -0.3,
-      "mean_final_fatigue": 0.398,
-      "mean_max_fatigue": 0.482,
-      "mean_teacher_workload": 16.11,
-      "fatigue_violation_rate": 0.0,
-      "co2_violation_rate": 43.3
+      "mode_collapse": true
     },
-    {
-      "policy": "CQL (Explicit)",
-      "episodes": 10,
-      "total_steps": 226,
-      "action_distribution_pct": {
-        "lecture": 28.3,
-        "quiz": 14.2,
-        "groupwork": 15.0,
-        "discussion": 9.3,
-        "break": 33.2
+    "CQL (Explicit)": {
+      "policy_name": "CQL (Explicit)",
+      "mean_cumulative_reward": -15.946,
+      "mean_delta_mastery": 0.0071,
+      "mean_delta_q25_equity": 0.0073,
+      "mean_final_fatigue": 0.481,
+      "mean_max_fatigue": 0.445,
+      "fatigue_violation_rate": 0.0176,
+      "co2_violation_rate": 0.4185,
+      "action_entropy": 2.266,
+      "normalized_entropy": 0.976,
+      "dominant_action": "quiz (30.4%)",
+      "action_distribution": {
+        "lecture": 20.3,
+        "quiz": 30.4,
+        "groupwork": 13.2,
+        "discussion": 18.9,
+        "break": 17.2
       },
-      "action_entropy_bits": 2.173,
-      "normalized_entropy": 0.936,
-      "dominant_action": "break (33.2%)",
-      "is_mode_collapsed": false,
-      "mean_cumulative_reward": -23.391,
-      "mean_delta_mastery": -0.348,
-      "mean_delta_q25": -0.322,
-      "mean_final_fatigue": 0.139,
-      "mean_max_fatigue": 0.189,
-      "mean_teacher_workload": 10.65,
-      "fatigue_violation_rate": 0.0,
-      "co2_violation_rate": 29.2
+      "mode_collapse": false
     },
-    {
-      "policy": "IRL-CQL (Latent)",
-      "episodes": 10,
-      "total_steps": 211,
-      "action_distribution_pct": {
-        "lecture": 0.9,
-        "quiz": 23.2,
-        "groupwork": 4.7,
-        "discussion": 62.6,
-        "break": 8.5
+    "IRL-CQL (Latent)": {
+      "policy_name": "IRL-CQL (Latent)",
+      "mean_cumulative_reward": -15.95,
+      "mean_delta_mastery": 0.0069,
+      "mean_delta_q25_equity": 0.0069,
+      "mean_final_fatigue": 0.481,
+      "mean_max_fatigue": 0.445,
+      "fatigue_violation_rate": 0.0176,
+      "co2_violation_rate": 0.4185,
+      "action_entropy": 2.266,
+      "normalized_entropy": 0.976,
+      "dominant_action": "quiz (30.4%)",
+      "action_distribution": {
+        "lecture": 20.3,
+        "quiz": 30.4,
+        "groupwork": 13.2,
+        "discussion": 18.9,
+        "break": 17.2
       },
-      "action_entropy_bits": 1.488,
-      "normalized_entropy": 0.641,
-      "dominant_action": "discussion (62.6%)",
-      "is_mode_collapsed": false,
-      "mean_cumulative_reward": -27.771,
-      "mean_delta_mastery": -0.348,
-      "mean_delta_q25": -0.321,
-      "mean_final_fatigue": 0.456,
-      "mean_max_fatigue": 0.595,
-      "mean_teacher_workload": 14.99,
-      "fatigue_violation_rate": 13.7,
-      "co2_violation_rate": 29.9
+      "mode_collapse": false
     }
-  ]
+  }
 }

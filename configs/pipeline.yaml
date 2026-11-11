@@ -2,6 +2,7 @@
 # Contains configurations across all 3 pipeline stages: Preprocess -> Estimator (DKT) -> Policy (CQL) & Digital Twin
 
 data:
+  data_root: "data"
   raw_zip_path: "data/EdNet-KT1.zip"
   canonical_dir: "data/canonical"
   shards_dir: "data/shards"
@@ -11,23 +12,49 @@ data:
   val_ratio: 0.1
   test_ratio: 0.1
   seed: 42
+  datasets:
+    ednet:
+      kt1_path: "data/EdNet-KT1.zip"
+      kt2_path: "data/EdNet-KT2.zip"
+      kt3_path: "data/EdNet-KT3.zip"
+      kt4_path: "data/EdNet-KT4.zip"
+    assistments:
+      cohort_path: "data/assistments/ASSISTments_skill_builder_data.csv"
+    assistments_affect:
+      raw_path: "data/assistments_affect/2012-2013-data-with-predictions-4-final.csv"
+      cache_path: "data/assistments_affect/affect_stats.json"
+    in_gauge_engage:
+      environmental_dir: "data/in_gauge_engage/longitudinal"
+      wearables_dir: "data/in_gauge_engage/class_wearable_data"
+    sociopatterns:
+      dir: "data/sociopatterns"
+      highschool_prox: "data/sociopatterns/HighSchool2013_proximity_net.csv"
+      highschool_friends: "data/sociopatterns/HighSchool2013_friendship_network.csv"
+      primary_school: "data/sociopatterns/primaryschool.csv"
+    bridge_to_algebra:
+      raw_path: "data/bridge_to_algebra_2006_2007/bridge_to_algebra_2006_2007_train.txt"
+      cache_path: "data/bridge_to_algebra_2006_2007/bridge_stats.json"
+    oulad:
+      dir: "data/oulad"
+      cache_path: "data/oulad/oulad_stats.json"
 
 estimator:
   model_type: "gru_dkt"
   d_model: 64
   d_hidden: 128
-  num_layers: 1
+  num_layers: 2
   dropout: 0.1
   learning_rate: 0.001
   weight_decay: 0.0001
   batch_size: 128
-  max_epochs: 5
+  max_epochs: 15
   early_stopping_patience: 5
   probe_sample_size: 10
+  num_shards: -1  # So luong shards de train (20 shards = 1,000,000 interactions). Dat -1 de load toan bo 1,521 shards (~76,050,000 interactions).
 
 policy:
   policy_type: "cql"
-  d_state: 12
+  d_state: 32
   d_hidden: 128
   learning_rate: 0.0003
   batch_size: 128
@@ -37,8 +64,11 @@ policy:
   workload_budget: 15.0
   harm_epsilon: 0.05
   polyak_tau: 0.005
+  episodes: 1000       # So episodes mo phong tao rollout buffer (~7,500 - 10,000 buoc chuyen trang thai 32D)
+  train_steps: 25000    # So buoc gradient optimization cho CQL policy
 
 twin:
+  d_state: 32
   default_cohort_size: 53
   episode_duration_minutes: 60
   mc_rollout_samples: 30
