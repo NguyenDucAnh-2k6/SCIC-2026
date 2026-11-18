@@ -1,0 +1,71 @@
+@startuml data_flow
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam roundcorner 6
+skinparam shadowing false
+skinparam ArrowColor #007A87
+
+skinparam rectangle {
+  BackgroundColor #F8FAFC
+  BorderColor #99D5DC
+  FontColor #0D233A
+}
+
+skinparam database {
+  BackgroundColor #E6F4F6
+  BorderColor #007A87
+  FontColor #0D233A
+}
+
+package "TANG 1: Event Emission o Client (frontend/src/ & classtwin-tracker.js)" {
+  rectangle "Nhom 1: Tri thuc & Do tre\nms_first_response via performance.now()\n-> Tuong thich EdNet-KT1 & ASSISTments" as E1
+  rectangle "Nhom 2: Video & Focus\nplay/pause/seek & window.onfocus\n-> Tuong thich EdNet KT2/3/4" as E2
+  rectangle "Nhom 3: Cam xuc Baker-Ryan\nmousemove Jitter & Dwell Time\n-> Tuong thich ASSISTments Affect" as E3
+  rectangle "Nhom 8: Giai toan theo buoc ITS\nstep_error_rate & hint_intensity\n-> Tuong thich Bridge to Algebra" as E4
+}
+
+package "TANG 2: Ingestion & State Buffer (src/classtwin/inference/)" {
+  rectangle "REST API Endpoint: POST /v1/events:batch\n(api.py::ingest_events_batch)" as API_INGEST
+  database "ClassroomStateStore (inference/state_store.py)\n- Bo nho dem student states theo lop\n- rolling aggregate: mean_m, q25_m, q75_m" as STORE
+}
+
+package "TANG 3: Deep Estimation & Telemetry Imputation (src/classtwin/)" {
+  rectangle "GRUDKT (state_estimation/gru_dkt.py)\n- h_{i,t} in R^128 cap nhat lien tuc\n- probe_mastery.py decode diem m_{i,t}" as DKT_MODULE
+  rectangle "Telemetry Imputation Engine (data/telemetry_state.py)\n- Ham: build_state_vector()\n- Cong thuc: x_t = m_obs * x_raw + (1 - m_obs) * x_prior\n- Bu khuyet kenh IoT/Wearables vang mat" as IMPUTE_MODULE
+  database "State Vector Snapshot\nx_t in [0, 1]^32 (32 chieu chuan tac)" as STATE_VEC
+}
+
+package "TANG 4: Policy Inference & Twin Simulation (src/classtwin/)" {
+  rectangle "DecisionSupportEngine (inference/engine.py)\n- Dieu phoi Algorithm 4 Online Inference" as ENGINE_MODULE
+  rectangle "DiscreteCQL Policy (policies/cql.py)\n- Q-Network tinh Q(x_t, a) cho 5 actions:\n  {lecture, quiz, groupwork, discussion, break}" as CQL_MODULE
+  rectangle "Digital Twin Simulator (twin/classroom_env.py)\n- counterfactual_twin_rollout() (scenarios.py)\n- 30 Monte-Carlo samples du bao tuong lai" as TWIN_MODULE
+}
+
+package "TANG 5: Giang vien Console & Human-in-the-Loop Feedback" {
+  rectangle "API: POST /v1/recommendations\n-> Tra ve Khuyen nghi Su pham & Trajectory" as API_REC
+  rectangle "Teacher Tablet Console (frontend/src/)\n- Giang vien xem khuyen nghi AI\n- 1-cham: Bam [Duyet / Tuy bien / Ghi de]" as TEACHER_UI
+  rectangle "API: POST /v1/teacher-decisions\n-> Ghi nhan quyet dinh & Cap nhat Workload B_spent" as API_DEC
+}
+
+E1 --> API_INGEST : "HTTP POST"
+E2 --> API_INGEST
+E3 --> API_INGEST
+E4 --> API_INGEST
+
+API_INGEST --> STORE : "update_student_state()"
+API_INGEST --> DKT_MODULE : "feed interaction log"
+DKT_MODULE --> IMPUTE_MODULE : "mastery distribution"
+STORE --> IMPUTE_MODULE : "class summary"
+IMPUTE_MODULE --> STATE_VEC : "tao vector x_t in R^32"
+
+STATE_VEC --> ENGINE_MODULE : "nap vao engine"
+ENGINE_MODULE --> CQL_MODULE : "select_action(x_t)"
+ENGINE_MODULE --> TWIN_MODULE : "rollout simulation"
+TWIN_MODULE --> ENGINE_MODULE : "tra ve du bao"
+
+ENGINE_MODULE --> API_REC : "RecommendationPayload"
+API_REC --> TEACHER_UI : "Hien thi khuyen nghi"
+TEACHER_UI --> API_DEC : "Teacher Decision"
+API_DEC --> STORE : "record_decision()"
+
+@enduml

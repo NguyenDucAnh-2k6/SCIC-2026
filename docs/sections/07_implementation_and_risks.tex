@@ -14,7 +14,7 @@ classtwin/
 ├── docs/                     # Tài liệu thiết kế toán học, API specs & đề án LaTeX
 ├── output/
 │   ├── artifacts/            # Vocab, evaluation_report.json, release_manifest.json
-│   └── models/               # Checkpoints đã lưu: gru_dkt.pt (8.6MB), cql_policy.pt (182KB)
+│   └── models/               # Checkpoints đã lưu: gru_dkt.pt (8.6MB), cql_policy.pt (92KB), irl_cql_policy.pt (92KB), latent_reward_net.pt (65KB)
 ├── scripts/
 │   ├── pipeline.py           # Entrypoint Pipeline hợp nhất (preprocess, DKT, CQL, eval)
 │   └── run_api.py            # Entrypoint Microservice FastAPI & Redis snapshot
@@ -49,7 +49,7 @@ Nhằm phục vụ công tác rà soát và đánh giá của Cố vấn Chuyên
     \addlinespace
     \textbf{3. Môi trường Bản sao số (Digital Twin)} & $100\%$ & \texttt{src/classtwin/twin/} & Môi trường Gymnasium \texttt{ClassroomDigitalTwinEnv} đa lớp học; tích hợp tương tác đồng đẳng $A_{peer}$, vi khí hậu In-Gauge và mệt mỏi nhận thức. \\
     \addlinespace
-    \textbf{4. Chính sách Tối ưu (Offline CQL \& IRL)} & $100\%$ & \texttt{src/classtwin/policies/} & Huấn luyện và đóng gói checkpoint \texttt{cql\_policy.pt}; Q-loss $5.902$, Bellman error $3.512$; Entropy $97.6\%$ (chống Mode Collapse thành công). \\
+    \textbf{4. Chính sách Tối ưu (Offline CQL \& IRL)} & $100\%$ & \texttt{src/classtwin/policies/} & Huấn luyện và đóng gói checkpoint \texttt{cql\_policy.pt} và \texttt{irl\_cql\_policy.pt}; Q-loss $6.966$, Bellman error $4.628$; Entropy $98.2\%$ (chống Mode Collapse thành công). \\
     \addlinespace
     \textbf{5. Benchmark \& Đánh giá Độc lập} & $100\%$ & \texttt{src/classtwin/evaluation/} & Bộ công cụ benchmark 4 chính sách tự động xuất báo cáo JSON (\texttt{evaluation\_report.json}) và siêu dữ liệu kiểm định nguồn gốc. \\
     \addlinespace

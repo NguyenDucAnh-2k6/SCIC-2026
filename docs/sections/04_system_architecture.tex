@@ -37,6 +37,77 @@ Hệ thống ClassTwin vận hành một luồng chuyển hóa dữ liệu khép
   \item \textbf{Constrained Offline RL Optimization (Offline Phase 2):} Sử dụng thuật toán Discrete CQL để tối ưu hóa chính sách sư phạm an toàn trên tập quỹ đạo chuyển dịch thực tế và mô phỏng.
   \item \textbf{Online Serving \& Continuous Feedback (Inference Phase):} Triển khai mô hình thông qua FastAPI và bộ đệm trạng thái Redis In-Memory; tiếp nhận quyết định phản hồi của giảng viên (\textit{Human-in-the-Loop}) để bổ sung vào kho dữ liệu tái huấn luyện.
 \end{enumerate}
+
+\subsection{Quy trình Thu thập Viễn trắc và Đo lường Thực địa tại Phòng học (Real-World Telemetry Pipeline)}\label{subsec:real-world-telemetry}
+Nhằm chứng minh tính khả thi thực tiễn khi đưa ClassTwin vào giảng đường thông minh thực tế, phần này mô tả chi tiết phương thức đo đạc vật lý, thiết bị phần cứng tương ứng và quy trình xử lý biên (Edge Processing) cho toàn bộ 9 nhóm chỉ số của vector trạng thái $\mathbf{x}_t \in \mathbb{R}^{32}$ trong điều kiện phòng học được trang bị đầy đủ hạ tầng:
+
+\begin{enumerate}[label=\textbf{Nhóm \arabic*.}]
+  \item \textbf{Phân bố Tri thức Toàn lớp (Dims 0--4):}
+  \begin{itemize}
+    \item \textbf{Thiết bị \& Nguồn phát:} Sinh viên sử dụng thiết bị cá nhân (Laptop, Smartphone, Tablet) truy cập ClassTwin Web App hoặc bảng bấm trắc nghiệm (Wireless Clickers).
+    \item \textbf{Phương thức đo:} Khi giảng viên kích hoạt bài kiểm tra nhanh (Concept Check), hệ thống ghi nhận kết quả làm bài $y \in \{0, 1\}$ và thời gian suy nghĩ $\Delta\tau$ (milli-giây từ lúc mở đề đến khi bấm nộp).
+    \item \textbf{Xử lý tại Edge Gateway:} Mạng GRU-DKT cục bộ chạy 1 lượt suy luận cập nhật $\mathbf{h}_{i, t} \in \mathbb{R}^{128}$ cho từng sinh viên. Sau đó, bộ Probe Decoder giải mã điểm năng lực chuẩn tắc $m_{i, t}$ trên 10 câu hỏi neo $\mathcal{Q}_{probe}$, tổng hợp thành 5 chỉ số phân phối: $\bar{m}_t$ (trung bình), $\mathbf{q}_{0.25}$ (nhóm nguy cơ), $\mathbf{q}_{0.75}$ (nhóm khá), $\text{Var}(m)$ (phương sai phân hóa) và $\rho_{weak}$ (tỷ lệ dưới ngưỡng $0.40$).
+  \end{itemize}
+
+  \item \textbf{Tương tác Hành vi \& Video Học tập (Dims 5--7):}
+  \begin{itemize}
+    \item \textbf{Thiết bị \& Nguồn phát:} Thư viện JavaScript Client-side Tracker nhúng trong nền tảng học tập số của sinh viên.
+    \item \textbf{Phương thức đo:} Ghi nhận sự kiện cửa sổ ứng dụng ở trạng thái tiêu điểm (\texttt{window.onfocus}), tần suất tương tác chuột/bàn phím tối thiểu (chống hành vi treo máy), tỷ lệ xem bài giảng đa phương tiện (play/pause/seek) và gia tốc trễ phản hồi so với đầu giờ học để tính mức chú ý $\bar{att}_t$, mức gắn kết video và tốc độ mệt mỏi tích lũy.
+  \end{itemize}
+
+  \item \textbf{Cảm xúc Học tập Phi Camera (Dims 8--11):}
+  \begin{itemize}
+    \item \textbf{Nguyên tắc Đạo đức (Privacy-by-Design):} Tuyệt đối không gắn camera soi biểu cảm khuôn mặt hay microphone thu âm học sinh (tránh vi phạm đạo đức và pháp lý học đường).
+    \item \textbf{Phương thức đo:} Sử dụng mô hình Baker-Ryan chạy nền trên chuỗi log nhịp độ thao tác (tần suất xóa/sửa câu trả lời, khoảng lặng do dự, chuỗi làm sai liên tiếp) để phân loại xác suất 4 trạng thái cảm xúc: $P(\text{Frustrated})$, $P(\text{Confused})$, $P(\text{Concentrating})$ và $P(\text{Bored})$.
+  \end{itemize}
+
+  \item \textbf{Viễn trắc Sinh lý Thần kinh (Dims 12--15):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} Vòng đeo tay thông minh giáo dục (ClassTwin Bioband / thiết bị tương thích Empatica E4 / BLE Smartband công nghiệp).
+    \item \textbf{Phương thức đo:}
+    \begin{itemize}
+      \item *Hoạt điện da (EDA / GSR):* Đo độ dẫn truyền điện bề mặt da qua 2 điện cực mạ bạc ở cổ tay (tần số 4 Hz), chuẩn hóa $\min(1, \text{EDA} / 15.0\,\mu\text{S})$ để đo mức kích thích thần kinh giao cảm (Sympathetic Arousal / Stress).
+      \item *Áp lực nhịp tim (HR / PPG):* Cảm biến quang học Photoplethysmography đo nhịp tim tức thời (BPM) và biến thiên nhịp tim (HRV), chuẩn hóa trong dải an toàn $55 - 120\text{ BPM}$.
+      \item *Gia tốc 3 trục (ACC):* Đo độ lớn chuyển động $\|\mathbf{acc}\|_2 = \sqrt{a_x^2 + a_y^2 + a_z^2}$ ở tần số 32 Hz, phản ánh mức độ bồn chồn (fidgeting / restlessness).
+      \item *Nhiệt độ da (Skin Temp):* Cảm biến hồng ngoại ngoại vi, chuẩn hóa trong dải $28 - 38^\circ\text{C}$.
+    \end{itemize}
+    \item \textbf{Truyền thông:} Kết nối BLE gửi gói tin mã hóa nén 5 giây/lần về Edge Gateway.
+  \end{itemize}
+
+  \item \textbf{Vi khí hậu Phòng học IoT (Dims 16--18):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} Trạm quan trắc vi khí hậu gắn tường giữa phòng học (ClassTwin Climate Station tích hợp cảm biến Sensirion SCD30 / SCD40 NDIR quang học và MEMS Sound Level Meter).
+    \item \textbf{Phương thức đo:} Cảm biến quang học NDIR đo nồng độ $\text{CO}_2$ (chính xác $\pm 30\text{ ppm}$), cảm biến nhiệt độ môi trường ($^\circ\text{C}$), và mức áp suất âm thanh tương đương $L_{Aeq}$ ($\text{dB}$) cập nhật mỗi 10 giây qua giao thức MQTT bảo mật về Edge Gateway.
+  \end{itemize}
+
+  \item \textbf{Mạng xã hội \& Tiếp xúc Đồng đẳng (Dims 19--21):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} Thẻ đeo sinh viên tích hợp RFID chủ động hoặc BLE Proximity Beacons (chuẩn SocioPatterns).
+    \item \textbf{Phương thức đo:} Thiết bị tự động ghi nhận sự kiện tiếp xúc mặt-đối-mặt khi hai sinh viên ở cự ly $< 1.5\text{ m}$ trong góc quét $\pm 45^\circ$. Edge Gateway cập nhật ma trận kề $A_{peer} \in [0, 1]^{N \times N}$, tính toán hệ số co cụm (Clustering Coefficient), tính đồng phương năng lực (Homophily) và tỷ lệ sinh viên cô lập ($d_i = 0$).
+  \end{itemize}
+
+  \item \textbf{Hành vi LMS VLE Dài hạn (Dims 22--24):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} LMS Connector Hub tích hợp chuẩn LTI vào Canvas/Moodle của nhà trường.
+    \item \textbf{Phương thức đo:} Đồng bộ tự động qua Webhook định kỳ: tần suất click vào học liệu tuần hiện tại, mức độ đúng hạn nộp bài tập, và điểm dự báo rủi ro học vụ từ mô hình phân tích học tập của trường.
+  \end{itemize}
+
+  \item \textbf{Thao tác Bước giải Vi mô ITS (Dims 25--27):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} Phân hệ Interactive Problem Solver trên ứng dụng học tập.
+    \item \textbf{Phương thức đo:} Ghi nhận tỷ lệ sai sót trên từng bước biến đổi đại số/lập trình, cường độ sinh viên yêu cầu gợi ý trợ giúp (Hints Requested), và thời gian do dự trước thao tác đầu tiên.
+  \end{itemize}
+
+  \item \textbf{Ràng buộc Điều khiển \& Tiến trình Tiết học (Dims 28--31):}
+  \begin{itemize}
+    \item \textbf{Thiết bị:} Ứng dụng điều phối giảng dạy Teacher Dashboard trên máy tính giảng viên.
+    \item \textbf{Phương thức đo:} Đồng hồ đếm thời gian thực $(T_{max} - t_{elapsed}) / T_{max}$, thanh ghi ngân sách công sức giảng viên $B_{spent} / B_{max}$, mã hóa categorical của hành động liền trước $a_{prev} / 4.0$, và biến đếm số lần lặp liên tiếp cùng hoạt động $k_{rep} / 3.0$.
+  \end{itemize}
+\end{enumerate}
+
+\subsubsection{Cơ chế Đồng bộ Hóa Thời gian và Độ trễ Suy luận Trực tuyến (Latency Budget)}
+Edge Gateway sử dụng giao thức Network Time Protocol (NTP) đồng bộ thời gian chuẩn xác đến micro-giây cho toàn bộ thiết bị. Bộ đệm trạng thái thời gian thực duy trì snapshot lăn (\textit{rolling window} 60 giây). Khi giảng viên yêu cầu AI tham mưu, Edge Gateway đóng gói 32 giá trị float32 thành payload JSON, gửi qua kết nối gRPC/REST tới FastAPI Inference Microservice. Quá trình tiền xử lý, kiểm tra dung lỗi viễn trắc và suy luận chính sách CQL Boltzmann hoàn tất trong \textbf{$< 15\text{ ms}$}, bảo đảm giảng viên nhận được khuyến nghị tức thì và mượt mà trên giao diện điều khiển.
+
 \noindent\textit{Lưu ý:} Toàn bộ danh mục, cấu trúc lược đồ (schema) và phân tích vai trò chuyên sâu của 7 bộ dữ liệu học thuật quốc tế được trình bày tập trung tại \textbf{Phần~\ref{sec:data-schemas}}.
 
 \newpage

@@ -1,0 +1,61 @@
+@startuml usecases_actors
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam roundcorner 8
+skinparam shadowing false
+skinparam ArrowColor #007A87
+skinparam ActorBorderColor #1A365D
+skinparam ActorBackgroundColor #E6F4F6
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #99D5DC
+  FontColor #0D233A
+  FontStyle bold
+}
+
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #007A87
+  FontColor #0D233A
+}
+
+actor "Sinh vien / Giam khao\n(BYOD Client)" as Student
+actor "Giang vien Dieu phoi\n(Teacher Console)" as Teacher
+
+package "Frontend Web App (frontend/src/ & classtwin-tracker.js)" {
+  usecase "UC1: Lam quiz Concept Check\n(Nhom 1: EdNet-KT1 & ASSISTments)\n-> ms_first_response, is_correct, attempts" as UC1
+  usecase "UC2: Xem video vi mo & Bat tieu diem\n(Nhom 2: EdNet KT2/KT3/KT4)\n-> video_ratio, window.onfocus, fatigue" as UC2
+  usecase "UC3: Bat nhip do chuot & Cam xuc phi camera\n(Nhom 3: ASSISTments Affect)\n-> Cursor Jitter, Dwell Time, Baker-Ryan Probs" as UC3
+  usecase "UC4: Giai toan theo buoc & Xin giang giao\n(Nhom 8: Bridge to Algebra / ITS)\n-> step_error_rate, hint_intensity, step_latency" as UC4
+}
+
+package "Backend Inference & Serving (src/classtwin/)" {
+  usecase "UC5: Tiep nhan Batch Events\nAPI: POST /v1/events:batch\n(api.py & ClassroomStateStore)" as UC5
+  usecase "UC6: Cap nhat Tri thuc & Giai ma Probe\nModule: GRUDKT & probe_mastery.py\n-> [mean, q25, q75, var, rho_weak]" as UC6
+  usecase "UC7: Bu khuyet Tien nghiem thanh Vector 32D\nModule: telemetry_state.py::build_state_vector()\n-> x_t in [0, 1]^32" as UC7
+  usecase "UC8: Yeu cau & Tao Khuyen nghi Su pham\nAPI: POST /v1/recommendations\n(engine.py::DecisionSupportEngine & cql.py::DiscreteCQL)" as UC8
+  usecase "UC9: Tra cuu Phan thuc Monte-Carlo Rollout\nAPI: POST /v1/simulations\n(classroom_env.py & scenarios.py)" as UC9
+  usecase "UC10: Ghi nhan Phe duyet cua Giang vien\nAPI: POST /v1/teacher-decisions\n(api.py -> ClassroomStateStore -> Workload B_spent)" as UC10
+}
+
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC4
+
+UC1 ..> UC5 : <<stream events>>
+UC2 ..> UC5 : <<stream events>>
+UC3 ..> UC5 : <<stream events>>
+UC4 ..> UC5 : <<stream events>>
+
+UC5 ..> UC6 : <<feed logs>>
+UC6 ..> UC7 : <<mastery dims 0..4>>
+UC7 ..> UC8 : <<input vector x_t in R^32>>
+
+Teacher --> UC8 : "Yeu cau AI tham muu"
+UC8 ..> UC9 : "Chay 30 Monte-Carlo rollouts"
+Teacher --> UC10 : "Bam Accept / Modify / Override"
+UC10 ..> UC8 : "Cap nhat Workload B_spent"
+
+@enduml

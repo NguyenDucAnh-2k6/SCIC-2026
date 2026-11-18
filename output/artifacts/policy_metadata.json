@@ -10,9 +10,9 @@
     "break"
   ],
   "cql_alpha": 1.0,
-  "final_loss": 7.879352569580078,
-  "action_entropy": 2.291,
-  "normalized_entropy": 0.987,
+  "final_loss": 6.965746879577637,
+  "action_entropy": 2.247,
+  "normalized_entropy": 0.968,
   "mode_collapse": false,
-  "checkpoint_sha256": "591bb367794f9e1b1116ba6581dfe602a1240314070f6226e47fe5905d07db97"
+  "checkpoint_sha256": "2e7d2367742750e8f12ed4c934812ecb75bc3ecb66a7bf5861ff175e5e553900"
 }

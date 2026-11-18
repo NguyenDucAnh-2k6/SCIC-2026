@@ -1,6 +1,6 @@
 \section{Trình diễn Thuật toán và Mã giả (Pseudocode)}\label{sec:thuat-toan}
 
-Phần này trình diễn chi tiết 4 thuật toán xương sống của hệ thống ClassTwin dưới dạng mã giả chuẩn mực để các kỹ sư AI, chuyên gia dữ liệu và nhà nghiên cứu sư phạm trong đội ngũ dễ dàng đối soát và hiện thực hóa bằng mã nguồn Python.
+Phần này trình diễn chi tiết 5 thuật toán xương sống của hệ thống ClassTwin dưới dạng mã giả chuẩn mực để các kỹ sư AI, chuyên gia dữ liệu và nhà nghiên cứu sư phạm trong đội ngũ dễ dàng đối soát và hiện thực hóa bằng mã nguồn Python.
 
 \subsection{Thuật toán 1: Ước lượng Trạng thái Người học và Đo lường Mastery}\label{subsec:algo-estimator}
 Thuật toán~\ref{algo:state-estimator} chịu trách nhiệm xử lý chuỗi sự kiện học tập ngoại tuyến hoặc trực tuyến, duy trì bộ nhớ ẩn GRU và trích xuất chỉ số nắm vững kiến thức chuẩn mực thông qua tập probe đã được cân bằng.
@@ -106,7 +106,7 @@ Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tư�
     \State $\mathcal{X}_{reason} \leftarrow \text{``Chưa đủ dữ liệu quan sát tin cậy. Đề xuất giữ nguyên tiến trình giảng.''}$
     \State \Return $a^*, \mathcal{X}_{reason}$
 \State \textbf{end if}
-\State Tổng hợp vector trạng thái lớp học $\mathbf{x}_t$ theo công thức~\eqref{eq:class-state}
+\State Tổng hợp vector trạng thái lớp học $\mathbf{x}_t$ theo công thức~\eqref{eq:class-state-32d}
 \State Lọc danh sách hành động khả thi: $\mathcal{A}_{cand} \leftarrow \text{MaskActions}(\mathbf{x}_t, T_{remain})$
 \State Chọn hành động sư phạm theo phân phối Boltzmann có điều chuẩn chống lặp: $a^* \sim \pi_\theta(a \mid \mathbf{x}_t)$ theo CT~\eqref{eq:boltzmann-policy}
 \State Chạy mô phỏng phản thực (Thuật toán~\ref{algo:twin-rollout}) để sinh khoảng tin cậy $[\text{P}_{10}, \text{P}_{90}]$ của $a^*$
@@ -116,6 +116,39 @@ Thuật toán~\ref{algo:online-inference} thể hiện trọn vẹn luồng tư�
 \State Nhận phản hồi từ giảng viên: $\text{decision} \in \{\text{ACCEPT}, \text{MODIFY}, \text{REJECT}\}$
 \State Ghi nhận hành động thực thi $a_{executed}$ và thời lượng thực tế vào nhật ký $\mathcal{D}_{log}$
 \State \Return $a_{executed}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Thuật toán 5: Khôi phục Hàm thưởng Ẩn bằng Maximum Entropy Inverse RL (MaxEnt-IRL)}\label{subsec:algo-maxent-irl}
+Thuật toán~\ref{algo:maxent-irl} mô tả quy trình khôi phục mạng phần thưởng ẩn $R_\psi(\mathbf{x}, a)$ từ tập quỹ đạo chuyên gia sư phạm $\mathcal{D}_{exp}$, làm đầu vào cho bài toán tối ưu hóa chính sách CQL trong chế độ phần thưởng nội sinh (Latent Reward Mode).
+
+\begin{algorithm}[H]
+\caption{Khôi phục Hàm thưởng Ẩn bằng Maximum Entropy Inverse RL (MaxEnt-IRL)}\label{algo:maxent-irl}
+\begin{algorithmic}[1]
+\Require Tập quỹ đạo thị phạm chuyên gia $\mathcal{D}_{exp} = \{\tau_1, \dots, \tau_M\}$ với $\tau = \{(s_t, a_t)\}_{t=0}^H$; Môi trường số hóa $\mathcal{E}_{twin}$; Tốc độ học $\eta_\psi$; Hệ số điều chuẩn $\beta_{reg}$; Số vòng lặp tối ưu $K_{irl}$.
+\Ensure Mạng nơ-ron phần thưởng ẩn đã hội tụ $R_\psi^*(\mathbf{x}, a)$.
+\State Khởi tạo ngẫu nhiên trọng số mạng phần thưởng ẩn $\psi \leftarrow \mathcal{N}(0, 0.01)$
+\State Trích xuất kỳ vọng đặc trưng chuyên gia: $\bm{\mu}_{exp} \leftarrow \frac{1}{|\mathcal{D}_{exp}|} \sum_{(s, a) \in \mathcal{D}_{exp}} \nabla_\psi R_\psi(s, a)$
+\For{vòng lặp $k = 1 \to K_{irl}$}
+    \State \textbf{// Bước 1: Giải bài toán xuôi (Forward RL / Soft Q-Learning dưới hàm thưởng hiện tại $R_\psi$)}
+    \State Huấn luyện chính sách mềm tạm thời $\pi_\psi(a \mid s) \propto \exp\big(Q_\psi(s, a)\big)$ trên môi trường $\mathcal{E}_{twin}$
+    \State \textbf{// Bước 2: Lấy mẫu quỹ đạo từ chính sách hiện tại trong Bản sao số}
+    \State Khởi tạo bộ nhớ chuyển dịch $\mathcal{D}_{policy} \leftarrow \emptyset$
+    \For{phiên lấy mẫu $m = 1 \to M_{sample}$}
+        \State Sinh quỹ đạo $\tau_m \sim \pi_\psi$ trên môi trường $\mathcal{E}_{twin}$
+        \State $\mathcal{D}_{policy} \leftarrow \mathcal{D}_{policy} \cup \tau_m$
+    \EndFor
+    \State \textbf{// Bước 3: Tính toán kỳ vọng phân phối của chính sách tác tử}
+    \State $\bm{\mu}_{policy} \leftarrow \frac{1}{|\mathcal{D}_{policy}|} \sum_{(s, a) \in \mathcal{D}_{policy}} \nabla_\psi R_\psi(s, a)$
+    \State \textbf{// Bước 4: Tính gradient đối ngẫu Maximum Entropy theo CT~\eqref{eq:maxent-gradient}}
+    \State $\mathbf{g}_\psi \leftarrow \bm{\mu}_{policy} - \bm{\mu}_{exp} + \beta_{reg} \psi$
+    \State \textbf{// Bước 5: Cập nhật trọng số mạng phần thưởng ẩn bằng thuật toán AdamW}
+    \State $\psi \leftarrow \psi - \eta_\psi \cdot \mathbf{g}_\psi$
+    \State \textbf{if} $\|\mathbf{g}_\psi\|_2 < \epsilon_{converge}$ \textbf{then}
+        \State \textbf{break} \Comment{Mạng phần thưởng ẩn đã tiệm cận phân phối chuyên gia}
+    \State \textbf{end if}
+\EndFor
+\State \Return Mạng phần thưởng ẩn $R_\psi^*$
 \end{algorithmic}
 \end{algorithm}
 

@@ -28,18 +28,60 @@ với $\mathbf{e}_q \in \mathbb{R}^d$ là vector nhúng câu hỏi kết hợp k
 Chỉ số này bảo đảm tính khách quan tuyệt đối, cho phép so sánh sự tiến bộ của người học qua các thời điểm khác nhau.
 
 \subsection{Động lực học Bản sao số Lớp học (Classroom Digital Twin Dynamics)}\label{subsec:twin-dynamics}
-Trạng thái ẩn nội tại của sinh viên $i$ tại bước quyết định $t$ được biểu diễn bởi $z_{i, t} \in \mathcal{Z}$. Quá trình chuyển dịch trạng thái của từng cá nhân chịu sự tác động đồng thời của động lực học tự nhiên $\mathcal{T}_\theta$ (học được từ dữ liệu lịch sử) và mô hình tác động can thiệp sư phạm $\phi$:
+Trạng thái nội tại của mỗi cá nhân sinh viên $i \in \{1, \dots, N\}$ tại thời điểm $t$ được đặc trưng bởi bộ ngũ thành phần:
+\begin{equation}\label{eq:individual-state-tuple}
+  z_{i, t} = \big\langle \mathbf{h}_{i, t}, c_{i, t}, \mathbf{p}_{i, t}, att_{i, t}, fat_{i, t} \big\rangle \in \mathcal{Z}
+\end{equation}
+trong đó $\mathbf{h}_{i, t} \in \mathbb{R}^{128}$ là vector trạng thái ẩn tri thức GRU; $c_{i, t} \in \{\text{Conc}, \text{Conf}, \text{Frust}, \text{Bored}\}$ là trạng thái cảm xúc học tập; $\mathbf{p}_{i, t} = [\text{EDA}, \text{HR}, \text{ACC}, \text{Temp}_{skin}]^T$ là vector viễn trắc sinh lý; $att_{i, t} \in [0, 1]$ là mức độ chú ý; và $fat_{i, t} \in [0, 1]$ là độ mệt mỏi nhận thức tích lũy.
+
+Quá trình chuyển dịch trạng thái phản thực chịu sự chi phối của toán tử động lực học ngẫu nhiên lai ghép (\textit{Hybrid Transition Operator}):
 \begin{equation}\label{eq:individual-transition}
   z_{i, t+1} \sim \mathcal{T}_{\theta, \phi}\big(z_{i, t}, a_t, \mathbf{c}_t, \Delta t, \mathbf{e}_{context, t}\big)
 \end{equation}
-trong đó:
-\begin{itemize}
-  \item $a_t \in \mathcal{A}$ là hành động can thiệp của giảng viên (ví dụ: thuyết trình, quiz, thảo luận nhóm, giải lao).
-  \item $\mathbf{c}_t$ là nội dung/chủ đề học tập hiện tại.
-  \item $\Delta t$ là thời lượng diễn ra hành động.
-  \item $\mathbf{e}_{context, t} = [\text{CO}_2, \text{Temp}, \text{Noise}, \mathbf{mask}]$ là vector bối cảnh vi khí hậu phòng học.
-  \item $\phi$ là vector tham số kịch bản phản thực mô tả biên độ tác động can thiệp (ví dụ: $\phi_{thảo\_luận}$ làm tăng độ hiểu bài nhưng tiêu hao năng lượng nhận thức).
-\end{itemize}
+Khác với các giả định ngẫu nhiên tùy tiện, toán tử $\mathcal{T}_{\theta, \phi}$ được cấu thành tường minh từ 4 hệ phương trình động lực học chuyên biệt:
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{Động lực học Tri thức (Trainable GRU-DKT \& Vygotsky Dynamics):}
+  \begin{equation}\label{eq:knowledge-transition}
+    \mathbf{h}_{i, t+1} = \begin{cases}
+      \text{GRU}_{\mathbf{w}}\big(\mathbf{h}_{i, t}, [\mathbf{e}_{q_t}; \hat{y}_{i, t}; \log(1 + \Delta \tau_t)]\big), & \text{nếu } a_t \in \{\text{Quiz}, \text{Lecture}\} \\
+      \mathbf{h}_{i, t} + \Delta m_i \cdot \mathbf{v}_{probe}, & \text{nếu } a_t \in \{\text{Groupwork}, \text{Discussion}\} \\
+      \mathbf{h}_{i, t}, & \text{nếu } a_t = \text{Break}
+    \end{cases}
+  \end{equation}
+  trong đó $\hat{y}_{i, t} \sim \text{Bernoulli}\big(\sigma(\mathbf{W}_{out}\mathbf{h}_{i, t} + \mathbf{b})_{q_t}\big)$ là phản hồi làm bài giả lập từ năng lực ẩn; $\mathbf{v}_{probe}$ là vector gradient định hướng cải thiện tri thức; và gia số tri thức đồng đẳng $\Delta m_i$ được tính toán dựa trên ma trận tiếp xúc xã hội $A_{peer}$ (SocioPatterns) và Lý thuyết Vùng phát triển gần nhất Vygotsky:
+  \begin{equation}\label{eq:peer-gain}
+    \Delta m_i = \eta_{peer} \cdot \frac{\sum_{j=1}^N A_{peer}[i, j] \cdot \max(0, m_j - m_i)}{\sum_{j=1}^N A_{peer}[i, j] + \epsilon} \cdot \phi_{peer}
+  \end{equation}
+  với $m_j = \text{ProbeMastery}(\mathbf{h}_{j, t})$ là điểm năng lực của bạn học cùng nhóm, $\eta_{peer} = 0.04$, và $\phi_{peer}$ là biên độ can thiệp phản thực.
+
+  \item \textbf{Động lực học Mệt mỏi Nhận thức (Cognitive Fatigue Accumulation):}
+  Mức độ mệt mỏi $fat_{i, t+1}$ tuân thủ định luật tích lũy mệt mỏi nhận thức kết hợp tiêu chuẩn môi trường học đường ASHRAE 62.1:
+  \begin{equation}\label{eq:fatigue-transition}
+    fat_{i, t+1} = \begin{cases}
+      \max\Big(0.0, \; fat_{i, t} - \kappa_{rec} \cdot \frac{\Delta t}{300}\Big), & \text{nếu } a_t = \text{Break} \\
+      \min\bigg(1.0, \; fat_{i, t} + \Big[\kappa_{base} \cdot c_{act}(a_t) + \kappa_{env} \cdot \max\Big(0, \frac{\text{CO}_2 - 1000}{400}\Big)\Big] \cdot \frac{\Delta t}{\tau_0}\bigg), & \text{ngược lại}
+    \end{cases}
+  \end{equation}
+  trong đó $c_{act}(a_t)$ là tải nhận thức chuẩn hóa của từng hoạt động ($1.0$ cho Quiz, $0.8$ cho Thuyết trình, $0.6$ cho Thảo luận, $0.0$ cho Nghỉ ngơi); $\kappa_{base} = 0.035$; $\kappa_{env} = 0.045$; và $\kappa_{rec} = 0.15$ là tốc độ phục hồi sinh lý trong giờ giải lao.
+
+  \item \textbf{Động lực học Chuyển dịch Cảm xúc (Empirical Markov Affect Transition):}
+  Trạng thái cảm xúc $c_{i, t+1} \in \mathcal{C}$ được lấy mẫu từ phân phối Markov có điều kiện:
+  \begin{equation}\label{eq:affect-markov}
+    P(c_{i, t+1} = k \mid c_{i, t} = j, a_t) = \mathbf{M}_{affect}[j, k \mid a_t]
+  \end{equation}
+  với hạt nhân chuyển trạng thái $\mathbf{M}_{affect}$ được hiệu chuẩn trực tiếp từ bộ phát hiện cảm xúc Baker-Ryan trên tập ASSISTments with Affect. Chẳng hạn, khi $fat > 0.60$ và $a_t = \text{Lecture}$, xác suất chuyển sang chán nản $P(\text{Bored} \mid \text{Conc})$ tăng vọt gấp 3 lần.
+
+  \item \textbf{Động lực học Vi khí hậu Lớp học (Indoor Climate Evolution):}
+  Nồng độ khí thở $\text{CO}_2$ biến thiên theo phương trình cân bằng khối lượng phòng kín:
+  \begin{equation}\label{eq:co2-evolution}
+    \text{CO}_{2, t+1} = \begin{cases}
+      \max\big(450.0, \; \text{CO}_{2, t} - \delta_{vent} \cdot \Delta t\big), & \text{nếu } a_t = \text{Break (Mở cửa/Thông gió)} \\
+      \min\big(2200.0, \; \text{CO}_{2, t} + \alpha_{resp} \cdot N \cdot \Delta t\big), & \text{ngược lại (Lớp đóng kín)}
+    \end{cases}
+  \end{equation}
+  với hệ số phát thải hô hấp học sinh $\alpha_{resp} = 0.085\text{ ppm}/(\text{người} \cdot \text{s})$ và tốc độ trao đổi khí tươi khi mở cửa $\delta_{vent} = 1.25\text{ ppm}/\text{s}$.
+\end{enumerate}
 
 \subsubsection{Tổng hợp Trạng thái Toàn lớp (Classroom State Aggregation: Vector 32 Chiều)}\label{subsubsec:state-32d-intro}
 Trạng thái của tập thể lớp học ảo gồm $N$ sinh viên tại thời điểm $t$ được tổng hợp thành vector trạng thái khả kiến mở rộng $\mathbf{x}_t \in \mathbb{R}^{32}$ phản ánh toàn diện 9 nhóm chỉ số từ 7 nguồn dữ liệu thực nghiệm:
@@ -62,6 +104,37 @@ trong đó:
   \item $\mathbf{x}_{control} = [T_{remain}, \text{Workload}, a_{prev}, k_{rep}]$: Tiến trình phiên học và kiểm soát sư phạm chống lặp.
 \end{itemize}
 \noindent Đặc tả chi tiết từng chiều, công thức chuẩn hóa và cơ chế bù khuyết thiếu được trình bày tại \textbf{Mục~\ref{subsec:rollout-specification}}.
+
+\subsubsection{Hướng Mở rộng Kiến trúc: Biểu diễn Trạng thái Toàn thể Bằng Set Transformer \& Attention Pooling}\label{subsubsec:set-transformer-extension}
+Mặc dù phép trích xuất mô-men thống kê phân phối ($\bar{m}, \mathbf{q}_{0.25}, \mathbf{q}_{0.75}, \text{Var}, \rho_{weak}$) giải quyết triệt để bài toán bất biến hoán vị và co hẹp số chiều, các mô-men này có thể bỏ sót các cấu trúc phân cụm tương tác nơ-ron phi tuyến phức tạp trong ma trận trạng thái ẩn $\mathbf{H}_t = [\mathbf{h}_{1, t}, \dots, \mathbf{h}_{N, t}]^T \in \mathbb{R}^{N \times d}$ ($d=128$). Để nâng cấp năng lực biểu diễn mà không làm bùng nổ số chiều khi sĩ số lớp $N$ thay đổi, nhóm nghiên cứu đề xuất hướng mở rộng kiến trúc sử dụng **Set Transformer** (Lee et al., ICML 2019):
+
+\begin{enumerate}[label=\textbf{\arabic*.}]
+  \item \textbf{Khối Chú ý Đa đầu (Multihead Attention Block - MAB):}
+  Cho hai ma trận đầu vào $\mathbf{X} \in \mathbb{R}^{n \times d}$ và $\mathbf{Y} \in \mathbb{R}^{m \times d}$, khối $\text{MAB}(\mathbf{X}, \mathbf{Y})$ học mối tương quan giữa các phần tử:
+  \begin{equation}\label{eq:mab-def}
+    \text{MAB}(\mathbf{X}, \mathbf{Y}) = \text{LayerNorm}\big(\mathbf{H}' + \text{rFF}(\mathbf{H}')\big) \quad \text{với} \quad \mathbf{H}' = \text{LayerNorm}\big(\mathbf{X} + \text{MultiHead}(\mathbf{X}, \mathbf{Y}, \mathbf{Y})\big)
+  \end{equation}
+  trong đó $\text{rFF}$ là mạng nơ-ron chuyển tiếp từng dòng (row-wise Feed-Forward Network).
+
+  \item \textbf{Khối Tự chú ý Tập hợp (Set Attention Block - SAB):}
+  Nắm bắt mối tương quan chéo giữa toàn bộ các cặp sinh viên trong lớp mà không phụ thuộc vào thứ tự danh sách:
+  \begin{equation}\label{eq:sab-def}
+    \mathbf{Z} = \text{SAB}(\mathbf{H}_t) = \text{MAB}(\mathbf{H}_t, \mathbf{H}_t) \in \mathbb{R}^{N \times d}
+  \end{equation}
+
+  \item \textbf{Phép gộp Chú ý qua Vector Mầm (Pooling by Multihead Attention - PMA):}
+  Để ánh xạ $N$ vector sinh viên về một số lượng cố định $k$ vector đặc trưng nơ-ron toàn lớp (chẳng hạn $k=2$), hệ thống khởi tạo $k$ vector mầm (*seed vectors*) có thể huấn luyện $\mathbf{S} \in \mathbb{R}^{k \times d}$:
+  \begin{equation}\label{eq:pma-def}
+    \mathbf{E}_{cohort} = \text{PMA}_k(\mathbf{Z}) = \text{MAB}(\mathbf{S}, \mathbf{Z}) \in \mathbb{R}^{k \times d}
+  \end{equation}
+  \item \textbf{Vector Biểu diễn Nơ-ron Toàn lớp ($\mathbf{e}_{cohort} \in \mathbb{R}^{k \cdot d}$):}
+  Vector trải phẳng $\mathbf{e}_{cohort} = \text{vec}(\mathbf{E}_{cohort})$ thỏa mãn nghiêm ngặt tính bất biến hoán vị theo Định lý Deep Sets:
+  \begin{equation}\label{eq:permutation-invariance}
+    \mathbf{e}_{cohort}\big(\mathbf{P} \mathbf{H}_t\big) = \mathbf{e}_{cohort}\big(\mathbf{H}_t\big) \quad \forall \mathbf{P} \in \mathcal{P}_N
+  \end{equation}
+  với $\mathcal{P}_N$ là tập hợp mọi ma trận hoán vị kích thước $N \times N$.
+\end{enumerate}
+Cơ chế này cho phép nén toàn bộ thông tin tương tác đa chiều của $N$ trạng thái ẩn GRU vào một embedding cố định (ví dụ $2 \times 16 = 32$ chiều), sẵn sàng ghép nối vào mạng Offline CQL trong các giai đoạn phát triển tiếp theo.
 
 \subsection{Bài toán Quyết định POMDP và Bán Markov}\label{subsec:pomdp-formulation}
 Môi trường lớp học thực tế là một Quá trình Quyết định Markov Quan sát Một phần (Partially Observable Markov Decision Process - POMDP) hữu hạn thời gian, định nghĩa bởi bộ 7 thành phần:
@@ -121,15 +194,58 @@ Khi suy luận trực tuyến, nhằm triệt tiêu hiện tượng argmax tham 
 với nhiệt độ $\tau = 0.35$ và hệ số phạt lặp $\lambda_{rep} = 0.60$, bảo đảm độ đa dạng Entropy sư phạm $H(\pi) = -\sum_a \pi(a)\log_2 \pi(a) \ge 0.70$ (đạt $0.94$ trên thực nghiệm benchmark), dung hòa toàn diện cả 5 hoạt động sư phạm.
 
 \subsection{Học Tăng cường Nghịch đảo (Inverse RL) với Mẫu Chuyên gia Ngẫu nhiên Mềm}\label{subsec:irl-theory}
-Bên cạnh hàm thưởng hiển thị, ClassTwin tích hợp nhánh \textbf{Maximum Entropy Inverse Reinforcement Learning (MaxEnt-IRL)} để khôi phục hàm thưởng ẩn $R_\psi(\mathbf{x}, a)$ từ các quỹ đạo chuyên gia sư phạm. Thay vì sử dụng các luật if-else cứng nhắc dễ gây thiên lệch mẫu, ClassTwin thiết lập bộ sinh quỹ đạo chuyên gia ngẫu nhiên mềm (\textit{Stochastic Expert Demonstrator}):
-\begin{equation}\label{eq:irl-expert-utility}
-  P_{exp}(a \mid \mathbf{x}) = \text{Softmax}\big(\mathbf{U}_{ped}(\mathbf{x}) \,/\, \tau_{exp}\big)
-\end{equation}
-trong đó $\mathbf{U}_{ped}$ là vector tiện ích sư phạm đa chiều (độ lệch phân vị $\mathbf{q}_{75} - \mathbf{q}_{25}$ kích hoạt học nhóm, mệt mỏi kích hoạt giải lao, giảng bài mới kích hoạt bài giảng, v.v.). Hàm thưởng ẩn $R_\psi$ được tối ưu hóa qua hàm mục tiêu đối ngẫu MaxEnt:
+Bên cạnh hàm phần thưởng tường minh theo quy chuẩn sư phạm, ClassTwin tích hợp nhánh \textbf{Maximum Entropy Inverse Reinforcement Learning (MaxEnt-IRL)} nhằm khôi phục hàm thưởng ẩn nội tại $R_\psi(\mathbf{x}, a)$ trực tiếp từ các quỹ đạo thị phạm của chuyên gia sư phạm. Cơ chế này giúp giải quyết tình huống nhà trường hoặc giảng viên không thể định lượng chính xác các trọng số phần thưởng ($w_m, w_l, w_c, w_s$), nhưng có thể cung cấp các chuỗi quyết định mẫu mực.
+
+\subsubsection{Phân định Bản chất Toán học của các Đại lượng trong MaxEnt-IRL}\label{subsubsec:irl-variables}
+Để bảo đảm tính minh bạch toán học, các thành phần trong bài toán MaxEnt-IRL được phân định rõ ràng giữa đại lượng tính toán được và tham số có thể học được:
+
+\begin{enumerate}[label=\textbf{(\alph*)}]
+  \item \textbf{Đại lượng Tính toán được (Deterministic / Measured Quantities):}
+  \begin{itemize}
+    \item $\mathbf{x} \in \mathbb{R}^{32}$: Vector trạng thái lớp học đo lường từ dòng viễn trắc và mô hình GRU-DKT.
+    \item $\mathcal{A}_{valid}(\mathbf{x}) \subseteq \{0, 1, 2, 3, 4\}$: Tập hợp các hành động sư phạm hợp lệ tại bước hiện tại (thỏa mãn ngân sách $B_{max}$ và thời gian $T_{remain}$).
+    \item $\mathbf{U}_{ped}(\mathbf{x}) \in \mathbb{R}^5$: Vector tiện ích sư phạm chuyên gia được xác định tiền định dựa trên các nguyên lý sư phạm chuẩn tắc:
+    \begin{equation}\label{eq:pedagogical-utility}
+      U_{ped}(\mathbf{x}, a) = \begin{cases}
+        w_1 (1 - \bar{m}_t) + w_2 \mathbb{I}(T_{elapsed} < 0.35 T_{max}), & a = 0 \text{ (Lecture: Thuyết trình)} \\
+        w_3 \bar{m}_t (1 - \bar{m}_t) + w_4 \mathbb{I}(a_{prev} == 0), & a = 1 \text{ (Quiz: Đánh giá nhanh)} \\
+        w_5 (\mathbf{q}_{0.75} - \mathbf{q}_{0.25}) + w_6 \cdot peer\_clustering, & a = 2 \text{ (Groupwork: Học nhóm)} \\
+        w_7 \rho_{weak} + w_8 P(\text{Confused}), & a = 3 \text{ (Discussion: Thảo luận)} \\
+        w_9 \max(0, \bar{fat}_t - 0.40) + w_{10} \max\big(0, \frac{\text{CO}_2 - 1000}{400}\big), & a = 4 \text{ (Break: Giải lao)}
+      \end{cases}
+    \end{equation}
+    với các hệ số $w_1, \dots, w_{10} > 0$ là các hằng số tiên nghiệm sư phạm đã được chuẩn hóa.
+    \item $P_{exp}(a \mid \mathbf{x})$: Phân phối hành vi chuyên gia ngẫu nhiên mềm (\textit{Stochastic Expert Demonstrator Policy}) dùng để sinh tập quỹ đạo thị phạm $\mathcal{D}_{exp}$:
+    \begin{equation}\label{eq:irl-expert-utility}
+      P_{exp}(a \mid \mathbf{x}) = \frac{\exp\big(U_{ped}(\mathbf{x}, a) \,/\, \tau_{exp}\big)}{\sum_{a' \in \mathcal{A}_{valid}(\mathbf{x})} \exp\big(U_{ped}(\mathbf{x}, a') \,/\, \tau_{exp}\big)} \quad \text{với nhiệt độ } \tau_{exp} = 0.50
+    \end{equation}
+  \end{itemize}
+
+  \item \textbf{Tham số Học được (Trainable / Learnable Parameters):}
+  \begin{itemize}
+    \item $\psi \in \mathbb{R}^{d_\psi}$: Vector trọng số của Mạng Nơ-ron Phần thưởng Ẩn $R_\psi(\mathbf{x}, a): \mathbb{R}^{32} \times \mathcal{A} \to \mathbb{R}$.
+    Mạng $R_\psi$ gồm 2 tầng ẩn perceptron đa tầng (MLP) với lớp nhúng hành động $\mathbf{e}_a \in \mathbb{R}^8$:
+    \begin{equation}\label{eq:latent-reward-net}
+      R_\psi(\mathbf{x}, a) = \mathbf{w}_2^T \, \text{LeakyReLU}\Big(\mathbf{W}_1 [\mathbf{x}; \mathbf{e}_a] + \mathbf{b}_1\Big) + b_2, \quad \psi = \{\mathbf{W}_1, \mathbf{b}_1, \mathbf{w}_2, b_2, \mathbf{E}_{action}\}
+    \end{equation}
+  \end{itemize}
+\end{enumerate}
+
+\subsubsection{Hàm Mục tiêu Đối ngẫu và Đạo hàm Gradient MaxEnt-IRL}\label{subsubsec:irl-gradient}
+Theo nguyên lý Maximum Entropy (Ziebart et al., AAAI 2008), phân phối xác suất trên không gian quỹ đạo $\tau = (s_0, a_0, \dots, s_H)$ tỷ lệ thuận với hàm mũ của phần thưởng tích lũy: $P(\tau \mid \psi) = \frac{1}{Z_\psi} \exp\big(\sum_{t} R_\psi(s_t, a_t)\big)$. Bài toán cực đại hóa log-likelihood trên tập mẫu thị phạm $\mathcal{D}_{exp}$ tương đương với tối thiểu hóa tổn thất đối ngẫu:
 \begin{equation}\label{eq:maxent-loss}
-  \mathcal{L}_{IRL}(\psi) = -\mathbb{E}_{(s, a) \sim \mathcal{D}_{exp}} [R_\psi(s, a)] + \ln \sum_{s', a'} \exp\big(R_\psi(s', a')\big) + \beta_{reg} \|R_\psi\|_2^2
+  \mathcal{L}_{IRL}(\psi) = -\frac{1}{|\mathcal{D}_{exp}|} \sum_{(s, a) \in \mathcal{D}_{exp}} R_\psi(s, a) + \ln \sum_{s', a'} \exp\big(R_\psi(s', a')\big) + \frac{\beta_{reg}}{2} \|\psi\|_2^2
 \end{equation}
-giúp hệ thống hiểu được các giá trị ngầm định của giảng viên chuyên gia mà không bị thiên lệch vào bất kỳ hoạt động đơn lẻ nào.
+trong đó số hạng thứ hai là log-partition function xấp xỉ qua phân phối trạng thái ghé thăm của chính sách hiện tại $\pi_\psi$. Đạo hàm giải tích để cập nhật trọng số mạng phần thưởng ẩn $\psi$ bằng Gradient Descent có dạng chuẩn tắc:
+\begin{equation}\label{eq:maxent-gradient}
+  \nabla_\psi \mathcal{L}_{IRL}(\psi) = \mathbb{E}_{(s, a) \sim \pi_\psi} \big[\nabla_\psi R_\psi(s, a)\big] - \mathbb{E}_{(s, a) \sim \mathcal{D}_{exp}} \big[\nabla_\psi R_\psi(s, a)\big] + \beta_{reg} \psi
+\end{equation}
+\noindent\textbf{Ý nghĩa Cơ chế Tự điều chỉnh:} Phương trình~\eqref{eq:maxent-gradient} thể hiện cơ chế so lệch trực tiếp giữa tần suất viễn trắc của tác tử và của chuyên gia:
+\begin{itemize}
+  \item Nếu tác tử thực hiện một hành động tại một trạng thái ít hơn chuyên gia, số hạng $-\mathbb{E}_{\mathcal{D}_{exp}}$ chiếm ưu thế, gradient kéo $\psi$ tăng phần thưởng cho cặp $(s, a)$ đó.
+  \item Ngược lại, nếu tác tử lạm dụng một hành động quá mức (ví dụ liên tục giải lao), số hạng $+\mathbb{E}_{\pi_\psi}$ sẽ chiếm ưu thế, gradient lập tức dìm phần thưởng của hành vi lạm dụng xuống.
+\end{itemize}
+Quy trình huấn luyện khôi phục $R_\psi$ được mô tả chi tiết tại Thuật toán~\ref{algo:maxent-irl} trong Phần~\ref{sec:thuat-toan}.
 
 \newpage
 

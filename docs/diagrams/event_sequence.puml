@@ -1,0 +1,86 @@
+@startuml event_sequence
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Arial
+skinparam roundcorner 6
+skinparam shadowing false
+skinparam ArrowColor #007A87
+skinparam SequenceLifeLineBorderColor #007A87
+skinparam SequenceLifeLineBackgroundColor #E6F4F6
+
+skinparam participant {
+  BackgroundColor #F8FAFC
+  BorderColor #1A365D
+  FontColor #0D233A
+  FontStyle bold
+}
+
+actor "Sinh vien / Giam khao\n(Mobile BYOD)" as User
+participant "Web App Client\n(frontend/src/)" as Client
+participant "Client Tracker\n(classtwin-tracker.js)" as Tracker
+participant "FastAPI Gateway\n(api.py)" as API
+participant "State Store\n(state_store.py)" as Store
+participant "Neural DKT Estimator\n(gru_dkt.py & probe_mastery.py)" as DKT
+participant "Telemetry State Engine\n(telemetry_state.py)" as TelEngine
+participant "Decision Support Engine\n(engine.py)" as Engine
+participant "Offline CQL Policy\n(policies/cql.py)" as CQL
+participant "Classroom Digital Twin\n(classroom_env.py & scenarios.py)" as Twin
+actor "Giang vien\n(Teacher Console)" as Teacher
+
+autonumber "<b>[0]</b>"
+
+User -> Client: Quet ma QR, mo bai hoc
+activate Client
+
+== Giai doan 1: Tuong tac Media (Nhom 2: EdNet KT2/3/4) ==
+User -> Client: Xem video vi mo 2 phut
+Client -> Tracker: Bat su kien video (play, pause, seek)
+Tracker -> Tracker: Do video_engagement_ratio & window.onfocus
+
+== Giai doan 2: Giai bai theo buoc vi mo (Nhom 8: Bridge to Algebra) ==
+User -> Client: Thuc hien buoc giai toan dai so
+Client -> Tracker: Bat dau buoc (do step_latency qua performance.now)
+User -> Client: Gap vuong mac -> Bam nut [Xem Goi y / Hint]
+Client -> Tracker: Tang bien dem hint_request_intensity
+User -> Client: Nop ket qua buoc 1 (dung/sai)
+Tracker -> Tracker: Ghi nhan step_error_rate
+
+== Giai doan 3: Quiz Concept Check & Cam xuc (Nhom 1 & 3: ASSISTments) ==
+User -> Client: Mo cau hoi trac nghiem Concept Check
+Client -> Tracker: Do do tre cham dau tien (ms_first_response)
+Tracker -> Tracker: Lay mau chuot moi 100ms -> Tinh Cursor Jitter
+Tracker -> Tracker: Heuristic Baker-Ryan suy dien 4 xac suat cam xuc\n[P(Frustrated), P(Confused), P(Flow), P(Bored)]
+User -> Client: Chon dap an cuoi cung (y in 0, 1)
+
+== Giai doan 4: Dong goi Telemetry & Day ve Backend ==
+Tracker -> API: POST /v1/events:batch (Payload JSON da nguon)
+deactivate Client
+activate API
+API -> Store: update_student_state(class_id, student_id, ts, mastery)
+API -> DKT: forward(q_seq, a_seq, delta_tau) -> Cap nhat hidden state h in R^128
+DKT -> DKT: evaluate_probe_mastery() -> Tinh [mean, q25, q75, var, rho_weak]
+API --> Tracker: 200 OK (accepted_count: N)
+deactivate API
+
+== Giai doan 5: AI Tham muu Su pham & Giang vien Phe duyet ==
+Teacher -> API: POST /v1/recommendations
+activate API
+API -> Engine: generate_recommendation(class_id, topic, time_rem, workload)
+activate Engine
+Engine -> Store: get_class_summary(class_id)
+Engine -> TelEngine: build_state_vector(telemetry, d_state=32, return_mask=True)
+TelEngine -> TelEngine: Ap dung Imputation Mask -> Tra ve vector x_t in R^32
+Engine -> CQL: select_action(x_t) -> Tinh Q(x_t, a) cho 5 hanh dong
+Engine -> Twin: counterfactual_twin_rollout(candidate_action, num_samples=30)
+Twin --> Engine: Tra ve trajectory du bao 15 phut toi
+Engine --> API: Tra ve RecommendationPayload (action, q_values, rollout_stats)
+deactivate Engine
+API --> Teacher: Hien thi Khuyen nghi tren Teacher Console (VD: "Chuyen sang Thao luan nhom")
+deactivate API
+
+Teacher -> API: POST /v1/teacher-decisions (status='ACCEPTED', actual_duration=5m)
+activate API
+API -> Store: record_decision(decision_id, status, executed_action)
+API --> Teacher: 200 OK (decision recorded, workload updated)
+deactivate API
+
+@enduml
